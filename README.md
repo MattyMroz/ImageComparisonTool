@@ -1,6 +1,6 @@
 # ImageComparisonTool 🖼️
 
-[Live Demo - Image Comparison Tool](https://mattymroz.github.io/ImageComparisonTool/)
+[Live Demo - Image Comparison Tool](https://mattymroz.github.io/ImageComparisonTool)
 
 ## Description 📄
 
