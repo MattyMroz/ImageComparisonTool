@@ -305,18 +305,26 @@
 
 <body>
     <div id="controls">
+        <div class="control-section" id="image-slots-controls">
+            <!-- Image slot selectors will be dynamically generated here -->
+        </div>
+        <div class="separator"></div>
         <div class="control-section">
             <div class="control-group">
-                <label for="slot0-select">Base Slot:</label>
-                <select id="slot0-select"></select>
+                <label for="comparison-mode-select">Comparison Mode:</label>
+                <select id="comparison-mode-select">
+                    <option value="swipe" selected>Swipe</option>
+                    <option value="fade">Fade</option>
+                    <option value="grid">Grid</option>
+                </select>
             </div>
-            <div class="control-group">
-                <label for="slot1-select">Comparison Slot 1:</label>
-                <select id="slot1-select"></select>
-            </div>
-            <div class="control-group">
-                <label for="slot2-select">Comparison Slot 2:</label>
-                <select id="slot2-select"></select>
+            <div class="control-group" id="grid-controls" style="display: none;">
+                <label>Grid Columns:</label>
+                <div class="control-row">
+                    <button id="remove-column-btn">-</button>
+                    <span id="grid-columns-value">2</span>
+                    <button id="add-column-btn">+</button>
+                </div>
             </div>
         </div>
         <div class="separator"></div>
@@ -362,6 +370,7 @@
         </div>
         <div class="separator"></div>
         <div class="control-section action-buttons-group">
+            <button id="add-slot-btn">+ Add Slot</button>
             <button id="add-files-btn">Add Files</button>
             <input type="file" id="hidden-file-input" multiple accept="image/*">
             <button id="reset-view-btn">Reset</button>
@@ -370,16 +379,7 @@
     <div id="app-container">
         <div id="main-view-area" class="no-images-loaded">
             <div class="image-stack hidden">
-                <div id="slot0-container" class="img-slot-container hidden"><img id="slot0-img" alt="Base Slot Image">
-                </div>
-                <div id="slot1-clipper" class="hidden">
-                    <div id="slot1-container" class="img-slot-container hidden"><img id="slot1-img"
-                            alt="Comparison Slot 1 Image"></div>
-                </div>
-                <div id="slot2-clipper" class="hidden">
-                    <div id="slot2-container" class="img-slot-container hidden"><img id="slot2-img"
-                            alt="Comparison Slot 2 Image"></div>
-                </div>
+                <!-- Image slots will be dynamically generated here -->
             </div>
             <div id="drop-info-wrapper">
                 <div id="drop-info-icon">📤</div>
@@ -389,31 +389,12 @@
     </div>
     <script>
         let DYNAMIC_AVAILABLE_IMAGES = [];
-        const MAX_COMPARISON_SLOTS = 3;
 
         document.addEventListener('DOMContentLoaded', () => {
             // DOM Elements
             const imageStack = document.querySelector('.image-stack');
-            const slotContainers = [
-                document.getElementById('slot0-container'),
-                document.getElementById('slot1-container'),
-                document.getElementById('slot2-container')
-            ];
-            const slotImages = [
-                document.getElementById('slot0-img'),
-                document.getElementById('slot1-img'),
-                document.getElementById('slot2-img')
-            ];
-            const slotClippers = [
-                null,
-                document.getElementById('slot1-clipper'),
-                document.getElementById('slot2-clipper')
-            ];
-            const slotSelects = [
-                document.getElementById('slot0-select'),
-                document.getElementById('slot1-select'),
-                document.getElementById('slot2-select')
-            ];
+            const imageSlotsControls = document.getElementById('image-slots-controls');
+            const comparisonModeSelect = document.getElementById('comparison-mode-select');
             const mainViewArea = document.getElementById('main-view-area');
             const speedSlider = document.getElementById('speed-slider');
             const speedValueSpan = document.getElementById('speed-value');
@@ -423,13 +404,21 @@
             const zoomValueSpan = document.getElementById('zoom-value');
             const resetViewBtn = document.getElementById('reset-view-btn');
             const addFilesBtn = document.getElementById('add-files-btn');
+            const addSlotBtn = document.getElementById('add-slot-btn');
             const hiddenFileInput = document.getElementById('hidden-file-input');
             const viewportWidthSlider = document.getElementById('viewport-width-slider');
             const viewportWidthValueSpan = document.getElementById('viewport-width-value');
             const viewportHeightSlider = document.getElementById('viewport-height-slider');
             const viewportHeightValueSpan = document.getElementById('viewport-height-value');
+            const gridControls = document.getElementById('grid-controls');
+            const addColumnBtn = document.getElementById('add-column-btn');
+            const removeColumnBtn = document.getElementById('remove-column-btn');
+            const gridColumnsValue = document.getElementById('grid-columns-value');
 
             // State
+            let activeSlotData = [];
+            let comparisonMode = 'swipe';
+            let gridColumns = 2;
             let currentSpeed = parseFloat(speedSlider.value);
             let currentDelay = parseFloat(delaySlider.value);
             let currentZoom = parseFloat(zoomSlider.value);
@@ -441,19 +430,10 @@
             let lastPanX_mouse, lastPanY_mouse;
             let canvasWidth = 0, canvasHeight = 0;
             let viewportWidth = 0, viewportHeight = 0;
-            let lineAnimationCursor = 0, lineAnimationDirection = 1;
+            let animationCursor = 0, animationDirection = 1;
             let animationFrameId = null;
             let pendingViewUpdate = false;
             let firstLoadDone = false;
-
-            let activeSlotData = Array(MAX_COMPARISON_SLOTS).fill(null).map(() => ({
-                src: null,
-                imgObject: new Image(),
-                naturalWidth: 0,
-                naturalHeight: 0,
-                isLoaded: false,
-                isLoading: false
-            }));
 
             // --- UI Control Updates ---
             function updateControlSpans() {
@@ -462,63 +442,133 @@
                 zoomValueSpan.textContent = currentZoom.toFixed(1) + 'x';
                 viewportWidthValueSpan.textContent = currentViewportWidthPercent + '%';
                 viewportHeightValueSpan.textContent = currentViewportHeightPercent + '%';
+                gridColumnsValue.textContent = gridColumns;
             }
-            updateControlSpans();
+
+            // --- Slot Management ---
+            function addNewSlot(isBaseSlot = false) {
+                const slotIndex = activeSlotData.length;
+                const isComparisonSlot = !isBaseSlot;
+
+                const controlGroup = document.createElement('div');
+                controlGroup.className = 'control-group';
+
+                const label = document.createElement('label');
+                label.htmlFor = `slot${slotIndex}-select`;
+                label.textContent = isBaseSlot ? 'Base Slot:' : `Comparison Slot ${slotIndex}:`;
+
+                const select = document.createElement('select');
+                select.id = `slot${slotIndex}-select`;
+                select.addEventListener('change', (e) => handleSlotSelectionChange(e, slotIndex));
+
+                controlGroup.appendChild(label);
+                controlGroup.appendChild(select);
+                imageSlotsControls.appendChild(controlGroup);
+
+                const slotContainer = document.createElement('div');
+                slotContainer.id = `slot${slotIndex}-container`;
+                slotContainer.className = 'img-slot-container hidden';
+
+                const img = document.createElement('img');
+                img.id = `slot${slotIndex}-img`;
+                img.alt = `${isBaseSlot ? 'Base' : 'Comparison'} Slot ${slotIndex} Image`;
+                slotContainer.appendChild(img);
+
+                let clipper = null;
+                if (isComparisonSlot) {
+                    clipper = document.createElement('div');
+                    clipper.id = `slot${slotIndex}-clipper`;
+                    clipper.className = 'hidden';
+                    clipper.style.position = 'absolute';
+                    clipper.style.top = '0';
+                    clipper.style.left = '0';
+                    clipper.style.height = '100%';
+                    clipper.style.overflow = 'hidden';
+                    clipper.style.backgroundColor = 'transparent';
+                    clipper.style.zIndex = slotIndex + 1;
+                    clipper.appendChild(slotContainer);
+                    imageStack.appendChild(clipper);
+                } else {
+                    slotContainer.style.zIndex = 1;
+                    imageStack.appendChild(slotContainer);
+                }
+
+                const newSlot = {
+                    src: null, imgObject: new Image(), naturalWidth: 0, naturalHeight: 0, isLoaded: false, isLoading: false,
+                    controlGroup, select, container: slotContainer, image: img, clipper
+                };
+
+                newSlot.imgObject.onload = () => imageLoadedOrFailed(slotIndex, true);
+                newSlot.imgObject.onerror = () => imageLoadedOrFailed(slotIndex, false);
+
+                activeSlotData.push(newSlot);
+                populateSelectOptions();
+            }
+
 
             // --- Event Listeners for Controls ---
-            speedSlider.addEventListener('input', (e) => {
-                currentSpeed = parseFloat(e.target.value);
-                updateControlSpans();
+            speedSlider.addEventListener('input', (e) => { currentSpeed = parseFloat(e.target.value); updateControlSpans(); });
+            delaySlider.addEventListener('input', (e) => { currentDelay = parseFloat(e.target.value); updateControlSpans(); });
+
+            comparisonModeSelect.addEventListener('change', (e) => {
+                comparisonMode = e.target.value;
+                gridControls.style.display = comparisonMode === 'grid' ? 'flex' : 'none';
+                requestViewUpdate();
             });
 
-            delaySlider.addEventListener('input', (e) => {
-                currentDelay = parseFloat(e.target.value);
+            addSlotBtn.addEventListener('click', () => addNewSlot(false));
+
+            addColumnBtn.addEventListener('click', () => {
+                gridColumns++;
                 updateControlSpans();
+                requestViewUpdate();
+            });
+
+            removeColumnBtn.addEventListener('click', () => {
+                if (gridColumns > 1) {
+                    gridColumns--;
+                    updateControlSpans();
+                    requestViewUpdate();
+                }
             });
 
             zoomSlider.addEventListener('input', (e) => {
                 const oldZoom = currentZoom;
-                const oldScaledCanvasHeight = canvasHeight * oldZoom;
                 currentZoom = parseFloat(e.target.value);
                 updateControlSpans();
                 if (!viewportWidth) return;
                 const centerX = viewportWidth / 2;
                 const centerY = viewportHeight / 2;
                 panX = centerX - (centerX - panX) * (currentZoom / oldZoom);
-                const newScaledCanvasHeight = canvasHeight * currentZoom;
-                if (oldScaledCanvasHeight >= viewportHeight && newScaledCanvasHeight < viewportHeight) {
-                    panY = (viewportHeight - newScaledCanvasHeight) / 2;
-                } else if (newScaledCanvasHeight >= viewportHeight) {
+                if (canvasHeight * currentZoom >= viewportHeight) {
                     panY = centerY - (centerY - panY) * (currentZoom / oldZoom);
                 } else {
-                    panY = (viewportHeight - newScaledCanvasHeight) / 2;
+                    panY = (viewportHeight - canvasHeight * currentZoom) / 2;
                 }
                 applyTransformations();
             });
 
-            viewportWidthSlider.addEventListener('input', (e) => {
-                const oldVWidth = viewportWidth;
-                currentViewportWidthPercent = parseFloat(e.target.value);
-                mainViewArea.style.width = currentViewportWidthPercent + '%';
+            const createViewportSliderHandler = (isWidth) => (e) => {
+                const oldDim = isWidth ? viewportWidth : viewportHeight;
+                if (isWidth) {
+                    currentViewportWidthPercent = parseFloat(e.target.value);
+                    mainViewArea.style.width = currentViewportWidthPercent + '%';
+                } else {
+                    currentViewportHeightPercent = parseFloat(e.target.value);
+                    mainViewArea.style.height = currentViewportHeightPercent + '%';
+                }
                 updateControlSpans();
                 requestAnimationFrame(() => {
                     updateMainViewAreaDimensions();
-                    panX += (viewportWidth - oldVWidth) / 2;
+                    const newDim = isWidth ? viewportWidth : viewportHeight;
+                    if (isWidth) panX += (newDim - oldDim) / 2;
+                    else panY += (newDim - oldDim) / 2;
                     applyTransformations();
                 });
-            });
+            };
 
-            viewportHeightSlider.addEventListener('input', (e) => {
-                const oldVHeight = viewportHeight;
-                currentViewportHeightPercent = parseFloat(e.target.value);
-                mainViewArea.style.height = currentViewportHeightPercent + '%';
-                updateControlSpans();
-                requestAnimationFrame(() => {
-                    updateMainViewAreaDimensions();
-                    panY += (viewportHeight - oldVHeight) / 2;
-                    applyTransformations();
-                });
-            });
+            viewportWidthSlider.addEventListener('input', createViewportSliderHandler(true));
+            viewportHeightSlider.addEventListener('input', createViewportSliderHandler(false));
 
             resetViewBtn.addEventListener('click', resetApp);
             addFilesBtn.addEventListener('click', () => hiddenFileInput.click());
@@ -527,18 +577,14 @@
             // --- Image Selection and Loading ---
             function populateSelectOptions() {
                 const emptyOptionHTML = `<option value="">-- Select Image --</option>`;
-                slotSelects.forEach(select => {
-                    const currentSelectedValue = select.value;
+                activeSlotData.forEach(slot => {
+                    const currentSelectedValue = slot.select.value;
                     let optionsHTML = emptyOptionHTML;
                     DYNAMIC_AVAILABLE_IMAGES.forEach((imgData) => {
                         optionsHTML += `<option value="${imgData.src}" ${imgData.src === currentSelectedValue ? 'selected' : ''}>${imgData.name}</option>`;
                     });
-                    select.innerHTML = optionsHTML;
-                    if (DYNAMIC_AVAILABLE_IMAGES.some(img => img.src === currentSelectedValue)) {
-                        select.value = currentSelectedValue;
-                    } else {
-                        select.value = "";
-                    }
+                    slot.select.innerHTML = optionsHTML;
+                    slot.select.value = DYNAMIC_AVAILABLE_IMAGES.some(img => img.src === currentSelectedValue) ? currentSelectedValue : "";
                 });
             }
 
@@ -551,29 +597,14 @@
                 return false;
             }
 
-            slotSelects.forEach(select =>
-                select.addEventListener('change', handleSlotSelectionChange)
-            );
-
-            activeSlotData.forEach((slotData, index) => {
-                slotData.imgObject.onload = () => imageLoadedOrFailed(index, true);
-                slotData.imgObject.onerror = () => imageLoadedOrFailed(index, false);
-            });
-
-            function handleSlotSelectionChange(event) {
-                const slotIndex = slotSelects.indexOf(event.target);
+            function handleSlotSelectionChange(event, slotIndex) {
                 const selectedSrc = event.target.value;
                 const currentSlot = activeSlotData[slotIndex];
 
-                if (currentSlot.isLoading) {
-                    currentSlot.isLoading = false;
-                }
-                currentSlot.src = selectedSrc || null;
-                currentSlot.isLoaded = false;
-                currentSlot.naturalWidth = 0;
-                currentSlot.naturalHeight = 0;
-                slotContainers[slotIndex].classList.add('hidden');
-                slotImages[slotIndex].src = "";
+                if (currentSlot.isLoading) currentSlot.isLoading = false;
+                Object.assign(currentSlot, { src: selectedSrc || null, isLoaded: false, naturalWidth: 0, naturalHeight: 0 });
+                currentSlot.container.classList.add('hidden');
+                currentSlot.image.src = "";
 
                 if (currentSlot.src) {
                     currentSlot.isLoading = true;
@@ -586,19 +617,14 @@
 
             function imageLoadedOrFailed(slotIndex, success) {
                 const slot = activeSlotData[slotIndex];
-                if (!slot.isLoading && slot.src) {
-                    return;
-                }
+                if (!slot.isLoading && slot.src) return;
                 slot.isLoading = false;
                 if (success) {
-                    slot.naturalWidth = slot.imgObject.naturalWidth;
-                    slot.naturalHeight = slot.imgObject.naturalHeight;
-                    slot.isLoaded = true;
+                    Object.assign(slot, { naturalWidth: slot.imgObject.naturalWidth, naturalHeight: slot.imgObject.naturalHeight, isLoaded: true });
                 } else {
                     console.error(`Error loading: ${slot.src}`);
-                    slot.isLoaded = false;
-                    slot.src = null;
-                    slotSelects[slotIndex].value = "";
+                    Object.assign(slot, { isLoaded: false, src: null });
+                    slot.select.value = "";
                 }
                 requestViewUpdate();
             }
@@ -621,104 +647,115 @@
                 const activeImagesForCanvas = activeSlotData.filter(d => d.isLoaded && d.src);
 
                 if (activeImagesForCanvas.length === 0) {
-                    canvasWidth = 0;
-                    canvasHeight = 0;
-                    firstLoadDone = false;
+                    canvasWidth = 0; canvasHeight = 0; firstLoadDone = false;
                 } else {
                     if (!setupCanvasAndImages(activeImagesForCanvas)) {
-                        canvasWidth = 0;
-                        canvasHeight = 0;
-                        applyTransformations();
-                        return;
+                        canvasWidth = 0; canvasHeight = 0;
+                        applyTransformations(); return;
                     }
                 }
 
                 updateMainViewAreaDimensions();
 
                 if (!firstLoadDone && activeImagesForCanvas.length > 0) {
-                    resetPanAndZoom();
-                    firstLoadDone = true;
+                    resetPanAndZoom(); firstLoadDone = true;
                 } else if (activeImagesForCanvas.length === 0) {
                     resetPanAndZoom(false);
+                }
+
+                if (comparisonMode === 'grid') {
+                    setupGridView();
+                } else {
+                    setupOverlayView();
                 }
 
                 applyTransformations();
 
                 activeSlotData.forEach((data, index) => {
                     if (data.isLoaded && data.src) {
-                        slotImages[index].src = data.src;
-                        slotContainers[index].classList.remove('hidden');
+                        data.image.src = data.src;
+                        data.container.classList.remove('hidden');
+                        const element = data.clipper || data.container;
+                        element.classList.remove('hidden');
                     } else {
-                        slotContainers[index].classList.add('hidden');
+                        data.container.classList.add('hidden');
+                        const element = data.clipper || data.container;
+                        element.classList.add('hidden');
                     }
                 });
 
-                slotClippers.forEach(clipper => clipper && clipper.classList.add('hidden'));
-
-                const isSlot0Active = activeSlotData[0]?.isLoaded && activeSlotData[0]?.src;
-                const isSlot1Active = activeSlotData[1]?.isLoaded && activeSlotData[1]?.src;
-                const isSlot2Active = activeSlotData[2]?.isLoaded && activeSlotData[2]?.src;
-
-                let comparingTwo = false;
-                let comparingThree = false;
-
-                if (isSlot0Active && isSlot1Active) {
-                    if (slotClippers[1]) slotClippers[1].classList.remove('hidden');
-                    comparingTwo = true;
-                    if (isSlot2Active) {
-                        if (slotClippers[2]) slotClippers[2].classList.remove('hidden');
-                        comparingThree = true;
-                    }
-                }
-
-                if (comparingTwo) {
-                    const { visibleStartPercent, visibleEndPercent } = getVisibleImageRangePercents();
-                    lineAnimationCursor = visibleStartPercent;
-                    lineAnimationDirection = 1;
-
-                    if (slotClippers[1] && !slotClippers[1].classList.contains('hidden')) {
-                        slotClippers[1].style.width = `${Math.max(visibleStartPercent, Math.min(visibleEndPercent, lineAnimationCursor))}%`;
-                    }
-                    if (comparingThree && slotClippers[2] && !slotClippers[2].classList.contains('hidden')) {
-                        slotClippers[2].style.width = `${Math.max(visibleStartPercent, Math.min(visibleEndPercent, lineAnimationCursor - currentDelay))}%`;
-                    } else if (slotClippers[2]) {
-                        slotClippers[2].style.width = '0%';
-                    }
-                    animateLines();
-                } else {
-                    if (slotClippers[1]) slotClippers[1].style.width = '0%';
-                    if (slotClippers[2]) slotClippers[2].style.width = '0%';
+                const loadedComparisonSlots = activeSlotData.slice(1).filter(d => d.isLoaded && d.src);
+                if (activeSlotData[0]?.isLoaded && loadedComparisonSlots.length > 0 && comparisonMode !== 'grid') {
+                    const { visibleStartPercent } = getVisibleImageRangePercents();
+                    animationCursor = visibleStartPercent;
+                    animationDirection = 1;
+                    animate();
                 }
             }
 
             function setupCanvasAndImages(activeImagesData) {
                 let maxW = 0, maxH = 0;
-                if (activeImagesData.length === 0) {
-                    canvasWidth = 0;
-                    canvasHeight = 0;
-                    return true;
-                }
                 activeImagesData.forEach(data => {
                     maxW = Math.max(maxW, data.naturalWidth);
                     maxH = Math.max(maxH, data.naturalHeight);
                 });
-                if (maxW === 0 || maxH === 0) {
-                    return false;
+                if (maxW === 0 || maxH === 0) return false;
+
+                canvasWidth = maxW; canvasHeight = maxH;
+
+                if (comparisonMode === 'grid') {
+                    const numColumns = gridColumns;
+                    const numRows = Math.ceil(activeImagesData.length / numColumns);
+                    imageStack.style.width = `${canvasWidth * numColumns}px`;
+                    imageStack.style.height = `${canvasHeight * numRows}px`;
+                } else {
+                    imageStack.style.width = `${canvasWidth}px`;
+                    imageStack.style.height = `${canvasHeight}px`;
                 }
-                canvasWidth = maxW;
-                canvasHeight = maxH;
-                imageStack.style.width = `${canvasWidth}px`;
-                imageStack.style.height = `${canvasHeight}px`;
-                activeSlotData.forEach((data, slotIndex) => {
-                    const imgEl = slotImages[slotIndex];
+
+                activeSlotData.forEach(data => {
                     if (data.isLoaded && data.src) {
-                        imgEl.style.width = `${canvasWidth}px`;
-                        imgEl.style.height = `${canvasHeight}px`;
-                        imgEl.style.left = `0px`;
-                        imgEl.style.top = `0px`;
+                        Object.assign(data.image.style, { width: `${canvasWidth}px`, height: `${canvasHeight}px`, left: '0px', top: '0px' });
                     }
                 });
                 return true;
+            }
+
+            function setupGridView() {
+                imageStack.style.display = 'grid';
+                imageStack.style.gridTemplateColumns = `repeat(${gridColumns}, 1fr)`;
+                imageStack.style.gap = '5px';
+
+                const loadedSlots = activeSlotData.filter(d => d.isLoaded && d.src);
+                loadedSlots.forEach(slot => {
+                    const element = slot.clipper || slot.container;
+                    Object.assign(element.style, { position: 'relative', zIndex: 1, width: 'auto', height: 'auto', left: 'auto', top: 'auto' });
+                    if (slot.clipper) {
+                        slot.clipper.style.overflow = 'visible';
+                        Object.assign(slot.container.style, { position: 'absolute', width: '100%', height: '100%', top: '0', left: '0' });
+                    }
+                });
+            }
+
+            function setupOverlayView() {
+                imageStack.style.display = 'block';
+                imageStack.style.gridTemplateColumns = '';
+                imageStack.style.gap = '';
+
+                activeSlotData.forEach((slot, index) => {
+                    slot.container.style.position = 'absolute';
+                    slot.container.style.width = '100%';
+                    slot.container.style.height = '100%';
+                    slot.container.style.top = '0';
+                    slot.container.style.left = '0';
+
+                    if (slot.clipper) {
+                        Object.assign(slot.clipper.style, { position: 'absolute', zIndex: index + 1, width: '0%', height: '100%', left: '0', top: '0', overflow: 'hidden' });
+                        slot.container.style.zIndex = 1;
+                    } else { // Base slot
+                        slot.container.style.zIndex = 1;
+                    }
+                });
             }
 
             function updateMainViewAreaDimensions() {
@@ -737,60 +774,50 @@
                 imageStack.classList.remove('hidden');
                 mainViewArea.classList.remove('no-images-loaded');
 
-                const scaledCanvasWidth = canvasWidth * currentZoom;
-                const scaledCanvasHeight = canvasHeight * currentZoom;
+                const activeImagesCount = activeSlotData.filter(d => d.isLoaded && d.src).length;
+                const numRows = Math.ceil(activeImagesCount / gridColumns);
+                const scaledCanvasWidth = (comparisonMode === 'grid' ? canvasWidth * gridColumns : canvasWidth) * currentZoom;
+                const scaledCanvasHeight = (comparisonMode === 'grid' ? canvasHeight * numRows : canvasHeight) * currentZoom;
 
-                let minPanX = viewportWidth - scaledCanvasWidth;
-                let maxPanX = 0;
-                let minPanY = viewportHeight - scaledCanvasHeight;
-                let maxPanY = 0;
-
-                if (scaledCanvasWidth < viewportWidth) {
-                    minPanX = maxPanX = (viewportWidth - scaledCanvasWidth) / 2;
-                }
+                let minPanX = (scaledCanvasWidth < viewportWidth) ? (viewportWidth - scaledCanvasWidth) / 2 : viewportWidth - scaledCanvasWidth;
+                let maxPanX = (scaledCanvasWidth < viewportWidth) ? (viewportWidth - scaledCanvasWidth) / 2 : 0;
                 panX = Math.max(minPanX, Math.min(maxPanX, panX));
 
-                if (scaledCanvasHeight < viewportHeight) {
-                    panY = (viewportHeight - scaledCanvasHeight) / 2;
-                } else {
-                    panY = Math.max(minPanY, Math.min(maxPanY, panY));
-                }
+                let minPanY = (scaledCanvasHeight < viewportHeight) ? (viewportHeight - scaledCanvasHeight) / 2 : viewportHeight - scaledCanvasHeight;
+                let maxPanY = (scaledCanvasHeight < viewportHeight) ? (viewportHeight - scaledCanvasHeight) / 2 : 0;
+                panY = Math.max(minPanY, Math.min(maxPanY, panY));
+
 
                 imageStack.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
             }
 
             function resetPanAndZoom(resetSliders = true) {
-                currentZoom = 1.0;
-                if (resetSliders) zoomSlider.value = currentZoom;
-                panX = 0;
-                panY = 0;
+                if (resetSliders) {
+                    currentZoom = 1.0;
+                    zoomSlider.value = currentZoom;
+                }
+                panX = 0; panY = 0;
                 if (viewportWidth > 0 && viewportHeight > 0) {
                     if (canvasWidth > 0 && canvasHeight > 0) {
-                        if (canvasWidth * currentZoom < viewportWidth)
-                            panX = (viewportWidth - canvasWidth * currentZoom) / 2;
-                        if (canvasHeight * currentZoom < viewportHeight)
-                            panY = (viewportHeight - canvasHeight * currentZoom) / 2;
-                    } else {
-                        panX = (viewportWidth) / 2;
-                        panY = (viewportHeight) / 2;
+                        if (canvasWidth * currentZoom < viewportWidth) panX = (viewportWidth - canvasWidth * currentZoom) / 2;
+                        if (canvasHeight * currentZoom < viewportHeight) panY = (viewportHeight - canvasHeight * currentZoom) / 2;
                     }
                 }
                 if (resetSliders) updateControlSpans();
             }
 
             function resetApp() {
-                slotSelects.forEach(select => select.value = "");
-                activeSlotData.forEach((slot, index) => {
-                    slot.src = null;
-                    slot.isLoaded = false;
-                    slot.isLoading = false;
-                    slot.naturalWidth = 0;
-                    slot.naturalHeight = 0;
-                    slotContainers[index].classList.add('hidden');
-                    slotImages[index].src = "";
-                });
                 if (animationFrameId) cancelAnimationFrame(animationFrameId);
                 animationFrameId = null;
+
+                imageSlotsControls.innerHTML = '';
+                imageStack.innerHTML = '';
+                activeSlotData = [];
+
+                gridColumns = 2;
+                comparisonModeSelect.value = 'swipe';
+                gridControls.style.display = 'none';
+
                 currentViewportWidthPercent = 100;
                 viewportWidthSlider.value = 100;
                 mainViewArea.style.width = '100%';
@@ -803,40 +830,41 @@
                 currentDelay = parseFloat(delaySlider.value);
                 firstLoadDone = false;
                 resetPanAndZoom(true);
-                processLoadedImagesAndUpdateView();
                 updateControlSpans();
+
+                addNewSlot(true); // Base Slot
+                addNewSlot(false); // First Comparison Slot
+
+                processDroppedOrSelectedFiles([]); // Clear selections
+                requestViewUpdate();
             }
 
             // --- File Handling ---
             function processDroppedOrSelectedFiles(files) {
-                if (files.length > 0) {
-                    let filesToProcess = Array.from(files).filter(f => f.type.startsWith('image/'));
-                    if (filesToProcess.length === 0) return;
-                    let firstNewImageSrcForAutoSelect = null;
-                    let processedCount = 0;
-                    filesToProcess.forEach(file => {
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                            const dataURL = event.target.result;
-                            const added = addImageToAvailableList(file.name, dataURL);
-                            if (added && !firstNewImageSrcForAutoSelect)
-                                firstNewImageSrcForAutoSelect = dataURL;
-                            processedCount++;
-                            if (processedCount === filesToProcess.length && firstNewImageSrcForAutoSelect) {
-                                const emptySlotIndex = activeSlotData.findIndex(slot => !slot.src);
-                                if (emptySlotIndex !== -1) {
-                                    slotSelects[emptySlotIndex].value = firstNewImageSrcForAutoSelect;
-                                    slotSelects[emptySlotIndex].dispatchEvent(new Event('change'));
-                                }
+                if (files.length === 0) return;
+                let filesToProcess = Array.from(files).filter(f => f.type.startsWith('image/'));
+                if (filesToProcess.length === 0) return;
+
+                let firstNewImageSrcForAutoSelect = null;
+                let processedCount = 0;
+                filesToProcess.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const dataURL = event.target.result;
+                        const added = addImageToAvailableList(file.name, dataURL);
+                        if (added && !firstNewImageSrcForAutoSelect) firstNewImageSrcForAutoSelect = dataURL;
+                        processedCount++;
+                        if (processedCount === filesToProcess.length && firstNewImageSrcForAutoSelect) {
+                            const emptySlot = activeSlotData.find(slot => !slot.src);
+                            if (emptySlot) {
+                                emptySlot.select.value = firstNewImageSrcForAutoSelect;
+                                emptySlot.select.dispatchEvent(new Event('change'));
                             }
-                        };
-                        reader.onerror = (error) => {
-                            console.error("File read error:", file.name, error);
-                            processedCount++;
-                        };
-                        reader.readAsDataURL(file);
-                    });
-                }
+                        }
+                    };
+                    reader.onerror = (error) => { console.error("File read error:", file.name, error); processedCount++; };
+                    reader.readAsDataURL(file);
+                });
             }
 
             function handleFileSelectionFromInput(event) {
@@ -844,120 +872,93 @@
                 event.target.value = null;
             }
 
-            // --- Drag & Drop Events ---
+            // --- Drag & Drop ---
             ['dragenter', 'dragover', 'dragleave', 'dragend'].forEach(eventName => {
                 mainViewArea.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (eventName === 'dragenter' || eventName === 'dragover')
-                        mainViewArea.classList.add('drag-over');
-                    else
-                        mainViewArea.classList.remove('drag-over');
+                    e.preventDefault(); e.stopPropagation();
+                    mainViewArea.classList.toggle('drag-over', eventName === 'dragenter' || eventName === 'dragover');
                 });
             });
-
             mainViewArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
+                e.preventDefault(); e.stopPropagation();
                 mainViewArea.classList.remove('drag-over');
                 processDroppedOrSelectedFiles(e.dataTransfer.files);
             });
 
             // --- Viewport Calculations ---
             function getVisibleImageRangePercents() {
-                if (!canvasWidth || !viewportWidth || currentZoom === 0)
-                    return { visibleStartPercent: 0, visibleEndPercent: 100 };
+                if (!canvasWidth || !viewportWidth || currentZoom === 0) return { visibleStartPercent: 0, visibleEndPercent: 100 };
                 const imgCoordAtViewportLeft = -panX / currentZoom;
                 const imgCoordAtViewportRight = (viewportWidth - panX) / currentZoom;
-                let visibleStartPercent = (imgCoordAtViewportLeft / canvasWidth) * 100;
-                let visibleEndPercent = (imgCoordAtViewportRight / canvasWidth) * 100;
-                visibleStartPercent = Math.max(0, Math.min(100, visibleStartPercent));
-                visibleEndPercent = Math.max(0, Math.min(100, visibleEndPercent));
-                return { visibleStartPercent, visibleEndPercent };
+                return {
+                    visibleStartPercent: Math.max(0, Math.min(100, (imgCoordAtViewportLeft / canvasWidth) * 100)),
+                    visibleEndPercent: Math.max(0, Math.min(100, (imgCoordAtViewportRight / canvasWidth) * 100))
+                };
             }
 
             // --- Animation ---
-            function animateLines() {
-                const isSlot1ClipperVisible = slotClippers[1] && !slotClippers[1].classList.contains('hidden');
-                const isSlot2ClipperVisible = slotClippers[2] && !slotClippers[2].classList.contains('hidden');
-                const comparingThreeImages = isSlot1ClipperVisible && isSlot2ClipperVisible;
-
-                if (!isSlot1ClipperVisible && !isSlot2ClipperVisible) {
+            function animate() {
+                const activeComparisonSlots = activeSlotData.slice(1).filter(d => d.isLoaded && d.src && d.clipper);
+                if (!activeSlotData[0]?.isLoaded || activeComparisonSlots.length === 0) {
                     if (animationFrameId) cancelAnimationFrame(animationFrameId);
-                    animationFrameId = null;
-                    return;
+                    animationFrameId = null; return;
                 }
 
                 const { visibleStartPercent, visibleEndPercent } = getVisibleImageRangePercents();
-                let actualCursorRangeStart, actualCursorRangeEnd;
+                const totalDelay = currentDelay * (activeComparisonSlots.length - 1);
+                const actualCursorRangeStart = visibleStartPercent;
+                const actualCursorRangeEnd = visibleEndPercent + totalDelay;
 
-                if (comparingThreeImages) {
-                    actualCursorRangeStart = visibleStartPercent;
-                    actualCursorRangeEnd = visibleEndPercent + currentDelay;
-                } else {
-                    actualCursorRangeStart = visibleStartPercent;
-                    actualCursorRangeEnd = visibleEndPercent;
+                animationCursor += currentSpeed * animationDirection;
+                if (animationCursor >= actualCursorRangeEnd) {
+                    animationCursor = actualCursorRangeEnd; animationDirection = -1;
+                } else if (animationCursor <= actualCursorRangeStart) {
+                    animationCursor = actualCursorRangeStart; animationDirection = 1;
                 }
 
-                lineAnimationCursor += currentSpeed * lineAnimationDirection;
-
-                if (lineAnimationCursor >= actualCursorRangeEnd) {
-                    lineAnimationCursor = actualCursorRangeEnd;
-                    lineAnimationDirection = -1;
-                } else if (lineAnimationCursor <= actualCursorRangeStart) {
-                    lineAnimationCursor = actualCursorRangeStart;
-                    lineAnimationDirection = 1;
+                if (comparisonMode === 'swipe') {
+                    activeComparisonSlots.forEach((slot, index) => {
+                        const delayedCursor = animationCursor - (currentDelay * index);
+                        slot.clipper.style.width = `${Math.max(visibleStartPercent, Math.min(visibleEndPercent, delayedCursor))}%`;
+                        slot.container.style.opacity = 1;
+                    });
+                } else if (comparisonMode === 'fade') {
+                    activeComparisonSlots.forEach((slot, index) => {
+                        const delayedCursor = animationCursor - (currentDelay * index);
+                        const opacity = (delayedCursor - visibleStartPercent) / (visibleEndPercent - visibleStartPercent);
+                        slot.container.style.opacity = Math.max(0, Math.min(1, opacity));
+                        slot.clipper.style.width = `100%`;
+                    });
                 }
 
-                if (isSlot1ClipperVisible) {
-                    slotClippers[1].style.width = `${Math.max(visibleStartPercent, Math.min(visibleEndPercent, lineAnimationCursor))}%`;
-                }
-                if (comparingThreeImages && isSlot2ClipperVisible) {
-                    slotClippers[2].style.width = `${Math.max(visibleStartPercent, Math.min(visibleEndPercent, lineAnimationCursor - currentDelay))}%`;
-                }
-
-                animationFrameId = requestAnimationFrame(animateLines);
+                animationFrameId = requestAnimationFrame(animate);
             }
 
-            // --- Mouse & Wheel Events for Panning/Zooming ---
+            // --- Mouse & Wheel Events ---
             mainViewArea.addEventListener('mousedown', (e) => {
                 if (e.button !== 0) return;
                 isPanning = true;
-                lastPanX_mouse = e.clientX;
-                lastPanY_mouse = e.clientY;
+                lastPanX_mouse = e.clientX; lastPanY_mouse = e.clientY;
                 mainViewArea.classList.add('grabbing');
                 e.preventDefault();
             });
-
             window.addEventListener('mousemove', (e) => {
                 if (!isPanning) return;
-                const dx = e.clientX - lastPanX_mouse;
-                const dy = e.clientY - lastPanY_mouse;
-                lastPanX_mouse = e.clientX;
-                lastPanY_mouse = e.clientY;
-                panX += dx;
-                panY += dy;
+                panX += e.clientX - lastPanX_mouse;
+                panY += e.clientY - lastPanY_mouse;
+                lastPanX_mouse = e.clientX; lastPanY_mouse = e.clientY;
                 applyTransformations();
             });
-
             window.addEventListener('mouseup', (e) => {
                 if (e.button !== 0) return;
-                if (isPanning) {
-                    isPanning = false;
-                    mainViewArea.classList.remove('grabbing');
-                }
+                if (isPanning) { isPanning = false; mainViewArea.classList.remove('grabbing'); }
             });
-
             mainViewArea.addEventListener('wheel', (e) => {
                 e.preventDefault();
                 const zoomFactor = 0.1;
                 const oldZoom = currentZoom;
-                const oldScaledCanvasHeight = canvasHeight * oldZoom;
-                if (!viewportWidth) return;
-                if (e.deltaY < 0)
-                    currentZoom = Math.min(parseFloat(zoomSlider.max), currentZoom * (1 + zoomFactor));
-                else
-                    currentZoom = Math.max(parseFloat(zoomSlider.min), currentZoom / (1 + zoomFactor));
+                if (e.deltaY < 0) currentZoom = Math.min(parseFloat(zoomSlider.max), currentZoom * (1 + zoomFactor));
+                else currentZoom = Math.max(parseFloat(zoomSlider.min), currentZoom / (1 + zoomFactor));
                 zoomSlider.value = currentZoom;
                 updateControlSpans();
 
@@ -966,14 +967,10 @@
                 const mouseYInViewport = e.clientY - rect.top;
 
                 panX = mouseXInViewport - (mouseXInViewport - panX) * (currentZoom / oldZoom);
-
-                const newScaledCanvasHeight = canvasHeight * currentZoom;
-                if (oldScaledCanvasHeight >= viewportHeight && newScaledCanvasHeight < viewportHeight) {
-                    panY = (viewportHeight - newScaledCanvasHeight) / 2;
-                } else if (newScaledCanvasHeight >= viewportHeight) {
+                if (canvasHeight * currentZoom >= viewportHeight) {
                     panY = mouseYInViewport - (mouseYInViewport - panY) * (currentZoom / oldZoom);
                 } else {
-                    panY = (viewportHeight - newScaledCanvasHeight) / 2;
+                    panY = (viewportHeight - canvasHeight * currentZoom) / 2;
                 }
                 applyTransformations();
             });
@@ -984,7 +981,6 @@
             });
 
             // --- Initial Setup ---
-            populateSelectOptions();
             resetApp();
         });
     </script>
