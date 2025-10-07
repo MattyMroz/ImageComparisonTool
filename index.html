@@ -48,18 +48,19 @@
             z-index: 100;
             display: flex;
             gap: 15px;
-            align-items: flex-start;
+            align-items: center;
             flex-wrap: wrap;
+            justify-content: center;
             border-bottom: 1px solid #444;
-            margin: 0 -15px;
-            padding-left: 35px;
-            padding-right: 35px;
+            box-sizing: border-box;
+            max-height: 30vh;
+            overflow-y: auto;
         }
 
         .control-section {
             display: flex;
             gap: 15px;
-            align-items: flex-start;
+            align-items: center;
         }
 
         .separator {
@@ -315,16 +316,7 @@
                 <select id="comparison-mode-select">
                     <option value="swipe" selected>Swipe</option>
                     <option value="fade">Fade</option>
-                    <option value="grid">Grid</option>
                 </select>
-            </div>
-            <div class="control-group" id="grid-controls" style="display: none;">
-                <label>Grid Columns:</label>
-                <div class="control-row">
-                    <button id="remove-column-btn">-</button>
-                    <span id="grid-columns-value">2</span>
-                    <button id="add-column-btn">+</button>
-                </div>
             </div>
         </div>
         <div class="separator"></div>
@@ -410,15 +402,10 @@
             const viewportWidthValueSpan = document.getElementById('viewport-width-value');
             const viewportHeightSlider = document.getElementById('viewport-height-slider');
             const viewportHeightValueSpan = document.getElementById('viewport-height-value');
-            const gridControls = document.getElementById('grid-controls');
-            const addColumnBtn = document.getElementById('add-column-btn');
-            const removeColumnBtn = document.getElementById('remove-column-btn');
-            const gridColumnsValue = document.getElementById('grid-columns-value');
 
             // State
             let activeSlotData = [];
             let comparisonMode = 'swipe';
-            let gridColumns = 2;
             let currentSpeed = parseFloat(speedSlider.value);
             let currentDelay = parseFloat(delaySlider.value);
             let currentZoom = parseFloat(zoomSlider.value);
@@ -442,7 +429,6 @@
                 zoomValueSpan.textContent = currentZoom.toFixed(1) + 'x';
                 viewportWidthValueSpan.textContent = currentViewportWidthPercent + '%';
                 viewportHeightValueSpan.textContent = currentViewportHeightPercent + '%';
-                gridColumnsValue.textContent = gridColumns;
             }
 
             // --- Slot Management ---
@@ -509,28 +495,11 @@
             // --- Event Listeners for Controls ---
             speedSlider.addEventListener('input', (e) => { currentSpeed = parseFloat(e.target.value); updateControlSpans(); });
             delaySlider.addEventListener('input', (e) => { currentDelay = parseFloat(e.target.value); updateControlSpans(); });
-
             comparisonModeSelect.addEventListener('change', (e) => {
                 comparisonMode = e.target.value;
-                gridControls.style.display = comparisonMode === 'grid' ? 'flex' : 'none';
                 requestViewUpdate();
             });
-
             addSlotBtn.addEventListener('click', () => addNewSlot(false));
-
-            addColumnBtn.addEventListener('click', () => {
-                gridColumns++;
-                updateControlSpans();
-                requestViewUpdate();
-            });
-
-            removeColumnBtn.addEventListener('click', () => {
-                if (gridColumns > 1) {
-                    gridColumns--;
-                    updateControlSpans();
-                    requestViewUpdate();
-                }
-            });
 
             zoomSlider.addEventListener('input', (e) => {
                 const oldZoom = currentZoom;
@@ -662,30 +631,21 @@
                 } else if (activeImagesForCanvas.length === 0) {
                     resetPanAndZoom(false);
                 }
-
-                if (comparisonMode === 'grid') {
-                    setupGridView();
-                } else {
-                    setupOverlayView();
-                }
-
                 applyTransformations();
 
                 activeSlotData.forEach((data, index) => {
                     if (data.isLoaded && data.src) {
                         data.image.src = data.src;
                         data.container.classList.remove('hidden');
-                        const element = data.clipper || data.container;
-                        element.classList.remove('hidden');
+                        if (data.clipper) data.clipper.classList.remove('hidden');
                     } else {
                         data.container.classList.add('hidden');
-                        const element = data.clipper || data.container;
-                        element.classList.add('hidden');
+                        if (data.clipper) data.clipper.classList.add('hidden');
                     }
                 });
 
                 const loadedComparisonSlots = activeSlotData.slice(1).filter(d => d.isLoaded && d.src);
-                if (activeSlotData[0]?.isLoaded && loadedComparisonSlots.length > 0 && comparisonMode !== 'grid') {
+                if (activeSlotData[0]?.isLoaded && loadedComparisonSlots.length > 0) {
                     const { visibleStartPercent } = getVisibleImageRangePercents();
                     animationCursor = visibleStartPercent;
                     animationDirection = 1;
@@ -702,16 +662,8 @@
                 if (maxW === 0 || maxH === 0) return false;
 
                 canvasWidth = maxW; canvasHeight = maxH;
-
-                if (comparisonMode === 'grid') {
-                    const numColumns = gridColumns;
-                    const numRows = Math.ceil(activeImagesData.length / numColumns);
-                    imageStack.style.width = `${canvasWidth * numColumns}px`;
-                    imageStack.style.height = `${canvasHeight * numRows}px`;
-                } else {
-                    imageStack.style.width = `${canvasWidth}px`;
-                    imageStack.style.height = `${canvasHeight}px`;
-                }
+                imageStack.style.width = `${canvasWidth}px`;
+                imageStack.style.height = `${canvasHeight}px`;
 
                 activeSlotData.forEach(data => {
                     if (data.isLoaded && data.src) {
@@ -719,43 +671,6 @@
                     }
                 });
                 return true;
-            }
-
-            function setupGridView() {
-                imageStack.style.display = 'grid';
-                imageStack.style.gridTemplateColumns = `repeat(${gridColumns}, 1fr)`;
-                imageStack.style.gap = '5px';
-
-                const loadedSlots = activeSlotData.filter(d => d.isLoaded && d.src);
-                loadedSlots.forEach(slot => {
-                    const element = slot.clipper || slot.container;
-                    Object.assign(element.style, { position: 'relative', zIndex: 1, width: 'auto', height: 'auto', left: 'auto', top: 'auto' });
-                    if (slot.clipper) {
-                        slot.clipper.style.overflow = 'visible';
-                        Object.assign(slot.container.style, { position: 'absolute', width: '100%', height: '100%', top: '0', left: '0' });
-                    }
-                });
-            }
-
-            function setupOverlayView() {
-                imageStack.style.display = 'block';
-                imageStack.style.gridTemplateColumns = '';
-                imageStack.style.gap = '';
-
-                activeSlotData.forEach((slot, index) => {
-                    slot.container.style.position = 'absolute';
-                    slot.container.style.width = '100%';
-                    slot.container.style.height = '100%';
-                    slot.container.style.top = '0';
-                    slot.container.style.left = '0';
-
-                    if (slot.clipper) {
-                        Object.assign(slot.clipper.style, { position: 'absolute', zIndex: index + 1, width: '0%', height: '100%', left: '0', top: '0', overflow: 'hidden' });
-                        slot.container.style.zIndex = 1;
-                    } else { // Base slot
-                        slot.container.style.zIndex = 1;
-                    }
-                });
             }
 
             function updateMainViewAreaDimensions() {
@@ -774,10 +689,8 @@
                 imageStack.classList.remove('hidden');
                 mainViewArea.classList.remove('no-images-loaded');
 
-                const activeImagesCount = activeSlotData.filter(d => d.isLoaded && d.src).length;
-                const numRows = Math.ceil(activeImagesCount / gridColumns);
-                const scaledCanvasWidth = (comparisonMode === 'grid' ? canvasWidth * gridColumns : canvasWidth) * currentZoom;
-                const scaledCanvasHeight = (comparisonMode === 'grid' ? canvasHeight * numRows : canvasHeight) * currentZoom;
+                const scaledCanvasWidth = canvasWidth * currentZoom;
+                const scaledCanvasHeight = canvasHeight * currentZoom;
 
                 let minPanX = (scaledCanvasWidth < viewportWidth) ? (viewportWidth - scaledCanvasWidth) / 2 : viewportWidth - scaledCanvasWidth;
                 let maxPanX = (scaledCanvasWidth < viewportWidth) ? (viewportWidth - scaledCanvasWidth) / 2 : 0;
@@ -813,10 +726,6 @@
                 imageSlotsControls.innerHTML = '';
                 imageStack.innerHTML = '';
                 activeSlotData = [];
-
-                gridColumns = 2;
-                comparisonModeSelect.value = 'swipe';
-                gridControls.style.display = 'none';
 
                 currentViewportWidthPercent = 100;
                 viewportWidthSlider.value = 100;
