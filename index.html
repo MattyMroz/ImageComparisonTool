@@ -27,6 +27,7 @@
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
+            user-select: none;
         }
 
         #app-container {
@@ -365,7 +366,7 @@
             <div class="control-group">
                 <label for="zoom-slider">Zoom:</label>
                 <div class="control-row">
-                    <input type="range" id="zoom-slider" min="0.1" max="100" step="0.1" value="1">
+                    <input type="range" id="zoom-slider" min="0" max="100" value="50">
                     <span id="zoom-value">1.0x</span>
                 </div>
             </div>
@@ -428,9 +429,7 @@
             let comparisonMode = 'swipe-horizontal';
             let currentSpeed = parseFloat(speedSlider.value);
             let currentDelay = parseFloat(delaySlider.value);
-            let currentZoom = parseFloat(zoomSlider.value);
-            let currentViewportWidthPercent = parseFloat(viewportWidthSlider.value);
-            let currentViewportHeightPercent = parseFloat(viewportHeightSlider.value);
+            let currentZoom = 1.0;
 
             let panX = 0, panY = 0;
             let isPanning = false;
@@ -448,9 +447,9 @@
                 speedValueSpan.textContent = currentSpeed.toFixed(2) + 'x';
                 delayValueSpan.textContent = currentDelay + '%';
                 zoomValueSpan.textContent = currentZoom.toFixed(1) + 'x';
-                viewportWidthValueSpan.textContent = currentViewportWidthPercent + '%';
-                viewportHeightValueSpan.textContent = currentViewportHeightPercent + '%';
                 opacityValue.textContent = `${Math.round(opacitySlider.value * 100)}%`;
+                viewportWidthValueSpan.textContent = `${viewportWidthSlider.value}%`;
+                viewportHeightValueSpan.textContent = `${viewportHeightSlider.value}%`;
             }
 
             // --- Slot Management ---
@@ -513,6 +512,24 @@
                 populateSelectOptions();
             }
 
+            // --- Zoom Logic ---
+            function getZoomFromSlider(value) {
+                const sliderValue = parseFloat(value);
+                if (sliderValue < 50) {
+                    return Math.pow(10, (sliderValue / 50.0) - 1); // Maps 0->0.1, 50->1
+                } else {
+                    return 1 + ((sliderValue - 50) / 50.0) * 19; // Maps 50->1, 100->20
+                }
+            }
+
+            function getSliderFromZoom(zoomValue) {
+                if (zoomValue < 1) {
+                    return 50 * (Math.log10(zoomValue) + 1);
+                } else {
+                    return 50 + ((zoomValue - 1) / 19.0) * 50;
+                }
+            }
+
 
             // --- Event Listeners for Controls ---
             speedSlider.addEventListener('input', (e) => { currentSpeed = parseFloat(e.target.value); updateControlSpans(); });
@@ -539,14 +556,17 @@
 
             zoomSlider.addEventListener('input', (e) => {
                 const oldZoom = currentZoom;
-                currentZoom = parseFloat(e.target.value);
+                currentZoom = getZoomFromSlider(e.target.value);
                 updateControlSpans();
+
                 if (!viewportWidth) return;
-                const centerX = viewportWidth / 2;
-                const centerY = viewportHeight / 2;
-                panX = centerX - (centerX - panX) * (currentZoom / oldZoom);
+                const rect = mainViewArea.getBoundingClientRect();
+                const mouseXInViewport = (rect.width / 2);
+                const mouseYInViewport = (rect.height / 2);
+
+                panX = mouseXInViewport - (mouseXInViewport - panX) * (currentZoom / oldZoom);
                 if (canvasHeight * currentZoom >= viewportHeight) {
-                    panY = centerY - (centerY - panY) * (currentZoom / oldZoom);
+                    panY = mouseYInViewport - (mouseYInViewport - panY) * (currentZoom / oldZoom);
                 } else {
                     panY = (viewportHeight - canvasHeight * currentZoom) / 2;
                 }
@@ -556,11 +576,9 @@
             const createViewportSliderHandler = (isWidth) => (e) => {
                 const oldDim = isWidth ? viewportWidth : viewportHeight;
                 if (isWidth) {
-                    currentViewportWidthPercent = parseFloat(e.target.value);
-                    mainViewArea.style.width = currentViewportWidthPercent + '%';
+                    mainViewArea.style.width = e.target.value + '%';
                 } else {
-                    currentViewportHeightPercent = parseFloat(e.target.value);
-                    mainViewArea.style.height = currentViewportHeightPercent + '%';
+                    mainViewArea.style.height = e.target.value + '%';
                 }
                 updateControlSpans();
                 requestAnimationFrame(() => {
@@ -574,6 +592,7 @@
 
             viewportWidthSlider.addEventListener('input', createViewportSliderHandler(true));
             viewportHeightSlider.addEventListener('input', createViewportSliderHandler(false));
+
 
             resetViewBtn.addEventListener('click', resetApp);
             addFilesBtn.addEventListener('click', () => hiddenFileInput.click());
@@ -652,6 +671,9 @@
 
                 const activeImagesForCanvas = activeSlotData.filter(d => d.isLoaded && d.src);
 
+                updateModeAvailability(activeImagesForCanvas.length);
+
+
                 if (activeImagesForCanvas.length === 0) {
                     canvasWidth = 0; canvasHeight = 0; firstLoadDone = false;
                 } else {
@@ -671,6 +693,13 @@
                 applyTransformations();
 
                 activeSlotData.forEach((data) => {
+                    // Reset styles before applying mode-specific ones
+                    if(data.clipper) {
+                        data.clipper.style.width = '100%';
+                        data.clipper.style.height = '100%';
+                        data.container.style.opacity = '1';
+                    }
+
                     if (data.isLoaded && data.src) {
                         data.image.src = data.src;
                         data.container.classList.remove('hidden');
@@ -679,25 +708,35 @@
                         data.container.classList.add('hidden');
                         if (data.clipper) data.clipper.classList.add('hidden');
                     }
-                    if(data.clipper) { // Reset styles
-                        data.clipper.style.width = '100%';
-                        data.clipper.style.height = '100%';
-                        data.container.style.opacity = '1';
-                    }
                 });
 
                 const loadedComparisonSlots = activeSlotData.slice(1).filter(d => d.isLoaded && d.src);
                 if (activeSlotData[0]?.isLoaded && loadedComparisonSlots.length > 0) {
                     if (comparisonMode.startsWith('swipe') || comparisonMode === 'fade') {
-                        const { visibleStartPercent } = getVisibleImageRangePercents();
-                        animationCursor = visibleStartPercent;
-                        animationDirection = 1;
                         animate();
                     } else if (comparisonMode === 'onion-skin') {
                         activeSlotData[1].container.style.opacity = opacitySlider.value;
                     } else if (comparisonMode === 'manual-slider') {
                         setupManualSlider();
                     }
+                }
+            }
+
+            function updateModeAvailability(activeImageCount) {
+                const twoImageModes = ['onion-skin', 'manual-slider'];
+                const options = comparisonModeSelect.options;
+
+                for (let i = 0; i < options.length; i++) {
+                    if (twoImageModes.includes(options[i].value)) {
+                        options[i].disabled = activeImageCount > 2;
+                    }
+                }
+
+                if (activeImageCount > 2 && twoImageModes.includes(comparisonMode)) {
+                    comparisonModeSelect.value = 'swipe-horizontal';
+                    comparisonMode = 'swipe-horizontal';
+                    onionSkinControls.style.display = 'none';
+                    manualSliderControls.style.display = 'none';
                 }
             }
 
@@ -755,7 +794,7 @@
             function resetPanAndZoom(resetSliders = true) {
                 if (resetSliders) {
                     currentZoom = 1.0;
-                    zoomSlider.value = currentZoom;
+                    zoomSlider.value = getSliderFromZoom(1.0);
                 }
                 panX = 0; panY = 0;
                 if (viewportWidth > 0 && viewportHeight > 0) {
@@ -780,15 +819,7 @@
                 manualSliderControls.style.display = 'none';
                 opacitySlider.value = 0.5;
 
-                currentViewportWidthPercent = 100;
-                viewportWidthSlider.value = 100;
-                mainViewArea.style.width = '100%';
-                currentViewportHeightPercent = 100;
-                viewportHeightSlider.value = 100;
-                mainViewArea.style.height = '100%';
-                speedSlider.value = 0.25;
                 currentSpeed = parseFloat(speedSlider.value);
-                delaySlider.value = 10;
                 currentDelay = parseFloat(delaySlider.value);
                 firstLoadDone = false;
                 resetPanAndZoom(true);
@@ -865,16 +896,16 @@
             // --- Animation & Manual Modes ---
             function animate() {
                 const activeComparisonSlots = activeSlotData.slice(1).filter(d => d.isLoaded && d.src && d.clipper);
-                if (!activeSlotData[0]?.isLoaded || activeComparisonSlots.length === 0 || !comparisonMode.startsWith('swipe')) {
+                const isAnimated = comparisonMode.startsWith('swipe') || comparisonMode === 'fade';
+                if (!activeSlotData[0]?.isLoaded || activeComparisonSlots.length === 0 || !isAnimated) {
                     if (animationFrameId) cancelAnimationFrame(animationFrameId);
                     animationFrameId = null; return;
                 }
 
                 const { visibleStartPercent, visibleEndPercent, visibleTopPercent, visibleBottomPercent } = getVisibleImageRangePercents();
 
-                let cursor, rangeStart, rangeEnd;
-
-                if (comparisonMode === 'swipe-horizontal') {
+                let rangeStart, rangeEnd;
+                if (comparisonMode === 'swipe-horizontal' || comparisonMode === 'fade') {
                     rangeStart = visibleStartPercent;
                     rangeEnd = visibleEndPercent;
                 } else { // swipe-vertical
@@ -885,6 +916,11 @@
                 const totalDelay = currentDelay * (activeComparisonSlots.length - 1);
                 const actualCursorRangeEnd = rangeEnd + totalDelay;
 
+                if(!animationFrameId) { // Set initial cursor position
+                    animationCursor = rangeStart;
+                    animationDirection = 1;
+                }
+
                 animationCursor += currentSpeed * animationDirection;
                 if (animationCursor >= actualCursorRangeEnd) {
                     animationCursor = actualCursorRangeEnd; animationDirection = -1;
@@ -892,26 +928,20 @@
                     animationCursor = rangeStart; animationDirection = 1;
                 }
 
-                activeComparisonSlots.forEach((slot, index) => {
-                    const delayedCursor = animationCursor - (currentDelay * index);
-                    if (comparisonMode === 'swipe-horizontal') {
-                        slot.clipper.style.width = `${Math.max(rangeStart, Math.min(rangeEnd, delayedCursor))}%`;
-                        slot.clipper.style.height = '100%';
-                    } else { // swipe-vertical
-                        slot.clipper.style.height = `${Math.max(rangeStart, Math.min(rangeEnd, delayedCursor))}%`;
-                        slot.clipper.style.width = '100%';
-                    }
-                    slot.container.style.opacity = 1;
-                });
-
-
-                if (comparisonMode === 'fade') {
+                if (comparisonMode.startsWith('swipe')) {
+                    activeComparisonSlots.forEach((slot, index) => {
+                        const delayedCursor = animationCursor - (currentDelay * index);
+                        if (comparisonMode === 'swipe-horizontal') {
+                            slot.clipper.style.width = `${Math.max(rangeStart, Math.min(rangeEnd, delayedCursor))}%`;
+                        } else { // swipe-vertical
+                            slot.clipper.style.height = `${Math.max(rangeStart, Math.min(rangeEnd, delayedCursor))}%`;
+                        }
+                    });
+                } else if (comparisonMode === 'fade') {
                     activeComparisonSlots.forEach((slot, index) => {
                         const delayedCursor = animationCursor - (currentDelay * index);
                         const opacity = (delayedCursor - rangeStart) / (rangeEnd - rangeStart);
                         slot.container.style.opacity = Math.max(0, Math.min(1, opacity));
-                        slot.clipper.style.width = `100%`;
-                        slot.clipper.style.height = '100%';
                     });
                 }
 
@@ -931,22 +961,18 @@
                 const handlePosition = isHorizontal ? (parseFloat(manualSliderHandle.style.left) || 50) : (parseFloat(manualSliderHandle.style.top) || 50);
                 if (isHorizontal) {
                     comparisonSlot.clipper.style.width = `${handlePosition}%`;
-                    comparisonSlot.clipper.style.height = '100%';
                 } else {
                     comparisonSlot.clipper.style.height = `${handlePosition}%`;
-                    comparisonSlot.clipper.style.width = '100%';
                 }
             }
 
 
             manualSliderHandle.addEventListener('mousedown', (e) => {
                 isDraggingManualSlider = true;
-                mainViewArea.classList.add('grabbing');
             });
 
             window.addEventListener('mouseup', () => {
                 isDraggingManualSlider = false;
-                mainViewArea.classList.remove('grabbing');
             });
 
             window.addEventListener('mousemove', (e) => {
@@ -954,14 +980,15 @@
                 const rect = imageStack.getBoundingClientRect();
                 const isHorizontal = manualSliderDirection.value === 'horizontal';
 
+                let percent;
                 if (isHorizontal) {
                     const x = e.clientX - rect.left;
-                    const percent = Math.max(0, Math.min(100, (x / rect.width) * 100));
+                    percent = Math.max(0, Math.min(100, (x / rect.width) * 100));
                     manualSliderHandle.style.left = `${percent}%`;
                     if (activeSlotData[1]) activeSlotData[1].clipper.style.width = `${percent}%`;
                 } else {
                     const y = e.clientY - rect.top;
-                    const percent = Math.max(0, Math.min(100, (y / rect.height) * 100));
+                    percent = Math.max(0, Math.min(100, (y / rect.height) * 100));
                     manualSliderHandle.style.top = `${percent}%`;
                     if (activeSlotData[1]) activeSlotData[1].clipper.style.height = `${percent}%`;
                 }
@@ -978,7 +1005,7 @@
                 e.preventDefault();
             });
             window.addEventListener('mousemove', (e) => {
-                if (!isPanning) return;
+                if (!isPanning || isDraggingManualSlider) return;
                 panX += e.clientX - lastPanX_mouse;
                 panY += e.clientY - lastPanY_mouse;
                 lastPanX_mouse = e.clientX; lastPanY_mouse = e.clientY;
@@ -990,11 +1017,10 @@
             });
             mainViewArea.addEventListener('wheel', (e) => {
                 e.preventDefault();
-                const zoomFactor = 0.1;
                 const oldZoom = currentZoom;
-                if (e.deltaY < 0) currentZoom = Math.min(parseFloat(zoomSlider.max), currentZoom * (1 + zoomFactor));
-                else currentZoom = Math.max(parseFloat(zoomSlider.min), currentZoom / (1 + zoomFactor));
-                zoomSlider.value = currentZoom;
+                const newSliderValue = parseFloat(zoomSlider.value) + (e.deltaY > 0 ? -2 : 2);
+                zoomSlider.value = Math.max(0, Math.min(100, newSliderValue));
+                currentZoom = getZoomFromSlider(zoomSlider.value);
                 updateControlSpans();
 
                 const rect = mainViewArea.getBoundingClientRect();
