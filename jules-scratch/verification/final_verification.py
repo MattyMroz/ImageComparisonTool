@@ -36,22 +36,22 @@ async def main():
         await page.select_option('#comparison-mode-select', 'manual-slider')
         await page.wait_for_selector('#manual-slider-controls', state='visible')
         await page.select_option('#manual-slider-direction', 'horizontal')
-        await page.wait_for_timeout(200)
+        await page.wait_for_timeout(500) # Wait for view to update
 
         handle = page.locator('#manual-slider-handle')
-        main_view_area = page.locator('#main-view-area')
+        image_stack = page.locator('.image-stack')
 
-        # Get bounding boxes for accurate dragging relative to the viewport
+        # Get bounding boxes for accurate dragging relative to the image stack
         handle_bb = await handle.bounding_box()
-        view_area_bb = await main_view_area.bounding_box()
+        image_stack_bb = await image_stack.bounding_box()
 
-        if handle_bb and view_area_bb:
+        if handle_bb and image_stack_bb:
             # Start drag from the center of the handle
             start_x = handle_bb['x'] + handle_bb['width'] / 2
             start_y = handle_bb['y'] + handle_bb['height'] / 2
 
-            # Drag to 25% of the main view area width
-            target_x = view_area_bb['x'] + view_area_bb['width'] * 0.25
+            # Drag to 25% of the image stack width
+            target_x = image_stack_bb['x'] + image_stack_bb['width'] * 0.25
 
             await page.mouse.move(start_x, start_y)
             await page.mouse.down()
