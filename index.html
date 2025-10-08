@@ -960,13 +960,16 @@
                 const handlePosition = isHorizontal ? (parseFloat(manualSliderHandle.style.left) || 50) : (parseFloat(manualSliderHandle.style.top) || 50);
                 if (isHorizontal) {
                     comparisonSlot.clipper.style.width = `${handlePosition}%`;
+                    comparisonSlot.clipper.style.height = '100%';
                 } else {
                     comparisonSlot.clipper.style.height = `${handlePosition}%`;
+                    comparisonSlot.clipper.style.width = '100%';
                 }
             }
 
 
             manualSliderHandle.addEventListener('mousedown', (e) => {
+                e.preventDefault(); // Prevent text selection/drag-and-drop
                 isDraggingManualSlider = true;
             });
 
@@ -977,18 +980,18 @@
             window.addEventListener('mousemove', (e) => {
                 if (!isDraggingManualSlider) return;
 
-                const imageStackRect = imageStack.getBoundingClientRect();
+                const viewRect = mainViewArea.getBoundingClientRect();
                 const isHorizontal = manualSliderDirection.value === 'horizontal';
 
                 let percent;
                 if (isHorizontal) {
-                    const x = e.clientX - imageStackRect.left;
-                    percent = Math.max(0, Math.min(100, (x / imageStackRect.width) * 100));
+                    const x = e.clientX - viewRect.left;
+                    percent = Math.max(0, Math.min(100, (x / viewRect.width) * 100));
                     manualSliderHandle.style.left = `${percent}%`;
                     if (activeSlotData[1]) activeSlotData[1].clipper.style.width = `${percent}%`;
                 } else {
-                    const y = e.clientY - imageStackRect.top;
-                    percent = Math.max(0, Math.min(100, (y / imageStackRect.height) * 100));
+                    const y = e.clientY - viewRect.top;
+                    percent = Math.max(0, Math.min(100, (y / viewRect.height) * 100));
                     manualSliderHandle.style.top = `${percent}%`;
                     if (activeSlotData[1]) activeSlotData[1].clipper.style.height = `${percent}%`;
                 }
