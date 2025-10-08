@@ -61,6 +61,7 @@
             display: flex;
             gap: 15px;
             align-items: center;
+            flex-shrink: 0;
         }
 
         .separator {
@@ -381,9 +382,9 @@
     <div id="app-container">
         <div id="main-view-area" class="no-images-loaded">
             <div class="image-stack hidden">
+                 <div id="manual-slider-handle" class="hidden"></div>
                 <!-- Image slots will be dynamically generated here -->
             </div>
-            <div id="manual-slider-handle" class="hidden"></div>
             <div id="drop-info-wrapper">
                 <div id="drop-info-icon">📤</div>
                 <div id="drop-info-text">Drop images here or click "Add Files"</div>
@@ -809,7 +810,10 @@
                 animationFrameId = null;
 
                 imageSlotsControls.innerHTML = '';
-                imageStack.innerHTML = '';
+                // Clear all children except the handle
+                while (imageStack.children.length > 1) {
+                    imageStack.removeChild(imageStack.lastChild);
+                }
                 activeSlotData = [];
 
                 comparisonModeSelect.value = 'swipe-horizontal';
@@ -897,7 +901,14 @@
                 const isAnimated = comparisonMode.startsWith('swipe') || comparisonMode === 'fade';
                 if (!activeSlotData[0]?.isLoaded || activeComparisonSlots.length === 0 || !isAnimated) {
                     if (animationFrameId) cancelAnimationFrame(animationFrameId);
-                    animationFrameId = null; return;
+                    animationFrameId = null;
+                    if(activeComparisonSlots.length > 0) { // Reset clipper if animation stops
+                        activeComparisonSlots.forEach(slot => {
+                            slot.clipper.style.width = '100%';
+                            slot.clipper.style.height = '100%';
+                        });
+                    }
+                    return;
                 }
 
                 const { visibleStartPercent, visibleEndPercent, visibleTopPercent, visibleBottomPercent } = getVisibleImageRangePercents();
@@ -956,21 +967,15 @@
                 manualSliderHandle.style.width = isHorizontal ? '2px' : '100%';
                 manualSliderHandle.style.height = isHorizontal ? '100%' : '2px';
 
-                const imageStackRect = imageStack.getBoundingClientRect();
-                const handleRect = manualSliderHandle.getBoundingClientRect();
-
-                // Position the handle based on the clipper's current state
                 const clipperWidthPercent = parseFloat(comparisonSlot.clipper.style.width) || 50;
                 const clipperHeightPercent = parseFloat(comparisonSlot.clipper.style.height) || 50;
 
                 if (isHorizontal) {
-                    const handleLeft = imageStackRect.left + (imageStackRect.width * clipperWidthPercent / 100) - (handleRect.width / 2);
-                    manualSliderHandle.style.left = `${handleLeft}px`;
-                    manualSliderHandle.style.top = `${imageStackRect.top + imageStackRect.height / 2 - handleRect.height / 2}px`;
+                    manualSliderHandle.style.left = `${clipperWidthPercent}%`;
+                    manualSliderHandle.style.top = `50%`;
                 } else {
-                    const handleTop = imageStackRect.top + (imageStackRect.height * clipperHeightPercent / 100) - (handleRect.height / 2);
-                    manualSliderHandle.style.top = `${handleTop}px`;
-                    manualSliderHandle.style.left = `${imageStackRect.left + imageStackRect.width / 2 - handleRect.width / 2}px`;
+                    manualSliderHandle.style.top = `${clipperHeightPercent}%`;
+                    manualSliderHandle.style.left = `50%`;
                 }
             }
 
@@ -979,6 +984,8 @@
                 e.preventDefault(); // Prevent text selection/drag-and-drop
                 isDraggingManualSlider = true;
             });
+            manualSliderHandle.addEventListener('dragstart', (e) => e.preventDefault());
+
 
             window.addEventListener('mouseup', () => {
                 isDraggingManualSlider = false;
@@ -994,12 +1001,12 @@
                 if (isHorizontal) {
                     const x = e.clientX - imageStackRect.left;
                     percent = Math.max(0, Math.min(100, (x / imageStackRect.width) * 100));
-                    manualSliderHandle.style.left = `${imageStackRect.left + (imageStackRect.width * percent / 100)}px`;
+                    manualSliderHandle.style.left = `${percent}%`;
                     if (activeSlotData[1]) activeSlotData[1].clipper.style.width = `${percent}%`;
                 } else {
                     const y = e.clientY - imageStackRect.top;
                     percent = Math.max(0, Math.min(100, (y / imageStackRect.height) * 100));
-                    manualSliderHandle.style.top = `${imageStackRect.top + (imageStackRect.height * percent / 100)}px`;
+                    manualSliderHandle.style.top = `${percent}%`;
                     if (activeSlotData[1]) activeSlotData[1].clipper.style.height = `${percent}%`;
                 }
             });
