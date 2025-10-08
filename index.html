@@ -976,18 +976,19 @@
 
             window.addEventListener('mousemove', (e) => {
                 if (!isDraggingManualSlider) return;
-                const rect = imageStack.getBoundingClientRect();
+
+                const imageStackRect = imageStack.getBoundingClientRect();
                 const isHorizontal = manualSliderDirection.value === 'horizontal';
 
                 let percent;
                 if (isHorizontal) {
-                    const x = e.clientX - rect.left;
-                    percent = Math.max(0, Math.min(100, (x / rect.width) * 100));
+                    const x = e.clientX - imageStackRect.left;
+                    percent = Math.max(0, Math.min(100, (x / imageStackRect.width) * 100));
                     manualSliderHandle.style.left = `${percent}%`;
                     if (activeSlotData[1]) activeSlotData[1].clipper.style.width = `${percent}%`;
                 } else {
-                    const y = e.clientY - rect.top;
-                    percent = Math.max(0, Math.min(100, (y / rect.height) * 100));
+                    const y = e.clientY - imageStackRect.top;
+                    percent = Math.max(0, Math.min(100, (y / imageStackRect.height) * 100));
                     manualSliderHandle.style.top = `${percent}%`;
                     if (activeSlotData[1]) activeSlotData[1].clipper.style.height = `${percent}%`;
                 }
@@ -1044,4 +1045,6 @@
             resetApp();
         });
     </script>
->>>>>>> REPLACE
+</body>
+
+</html>
