@@ -382,7 +382,7 @@
     <div id="app-container">
         <div id="main-view-area" class="no-images-loaded">
             <div class="image-stack hidden">
-                 <div id="manual-slider-handle" class="hidden"></div>
+                <div id="manual-slider-handle" class="hidden"></div>
                 <!-- Image slots will be dynamically generated here -->
             </div>
             <div id="drop-info-wrapper">
@@ -538,7 +538,10 @@
                 comparisonMode = e.target.value;
                 onionSkinControls.style.display = comparisonMode === 'onion-skin' ? 'flex' : 'none';
                 manualSliderControls.style.display = comparisonMode === 'manual-slider' ? 'flex' : 'none';
-                requestViewUpdate();
+                // Bypassing requestViewUpdate as its debouncing flag was causing race conditions
+                // when the mode was changed immediately after an image load.
+                // A direct rAF call ensures the view always updates on mode change.
+                requestAnimationFrame(processLoadedImagesAndUpdateView);
             });
 
             opacitySlider.addEventListener('input', (e) => {
@@ -548,7 +551,10 @@
                 updateControlSpans();
             });
 
-            manualSliderDirection.addEventListener('change', requestViewUpdate);
+            manualSliderDirection.addEventListener('change', () => {
+                // Direct rAF call to prevent race conditions, same as the main mode selector.
+                requestAnimationFrame(processLoadedImagesAndUpdateView);
+            });
 
 
             addSlotBtn.addEventListener('click', () => addNewSlot(false));
@@ -788,6 +794,10 @@
 
 
                 imageStack.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
+
+                if (comparisonMode === 'manual-slider') {
+                    setupManualSlider();
+                }
             }
 
             function resetPanAndZoom(resetSliders = true) {
@@ -809,11 +819,15 @@
                 if (animationFrameId) cancelAnimationFrame(animationFrameId);
                 animationFrameId = null;
 
-                imageSlotsControls.innerHTML = '';
                 // Clear all children except the handle
-                while (imageStack.children.length > 1) {
+                while (imageStack.firstChild && imageStack.firstChild !== manualSliderHandle) {
+                    imageStack.removeChild(imageStack.firstChild);
+                }
+                 while (imageStack.lastChild && imageStack.lastChild !== manualSliderHandle) {
                     imageStack.removeChild(imageStack.lastChild);
                 }
+
+                imageSlotsControls.innerHTML = '';
                 activeSlotData = [];
 
                 comparisonModeSelect.value = 'swipe-horizontal';
@@ -926,8 +940,8 @@
                 const actualCursorRangeEnd = rangeEnd + totalDelay;
 
                 if(!animationFrameId) { // Set initial cursor position
-                    animationCursor = rangeStart;
-                    animationDirection = 1;
+                    let animationCursor = rangeStart;
+                    let animationDirection = 1;
                 }
 
                 animationCursor += currentSpeed * animationDirection;
