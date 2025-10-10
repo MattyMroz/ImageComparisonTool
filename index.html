@@ -27,7 +27,6 @@
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
-            user-select: none;
         }
 
         #app-container {
@@ -49,19 +48,18 @@
             z-index: 100;
             display: flex;
             gap: 15px;
-            align-items: center;
-            flex-wrap: nowrap;
-            justify-content: flex-start;
+            align-items: flex-start;
+            flex-wrap: wrap;
             border-bottom: 1px solid #444;
-            box-sizing: border-box;
-            overflow-x: auto;
+            margin: 0 -15px;
+            padding-left: 35px;
+            padding-right: 35px;
         }
 
         .control-section {
             display: flex;
             gap: 15px;
-            align-items: center;
-            flex-shrink: 0;
+            align-items: flex-start;
         }
 
         .separator {
@@ -292,6 +290,38 @@
             border: 2px solid #333;
         }
 
+        #slot0-container {
+            z-index: 1;
+        }
+
+        #slot1-clipper {
+            z-index: 2;
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            overflow: hidden;
+            background-color: transparent;
+        }
+
+        #slot1-container {
+            z-index: 1;
+        }
+
+        #slot2-clipper {
+            z-index: 3;
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            overflow: hidden;
+            background-color: transparent;
+        }
+
+        #slot2-container {
+            z-index: 1;
+        }
+
         .hidden {
             display: none !important;
         }
@@ -315,14 +345,14 @@
                     <option value="manual-slider">Manual Slider</option>
                 </select>
             </div>
-            <div id="onion-skin-controls" class="control-group" style="display: none;">
+            <div id="onion-skin-controls" class="control-group hidden">
                 <label for="opacity-slider">Opacity:</label>
                 <div class="control-row">
                     <input type="range" id="opacity-slider" min="0" max="1" step="0.01" value="0.5">
                     <span id="opacity-value">50%</span>
                 </div>
             </div>
-            <div id="manual-slider-controls" class="control-group" style="display: none;">
+            <div id="manual-slider-controls" class="control-group hidden">
                 <label for="manual-slider-direction">Direction:</label>
                 <select id="manual-slider-direction">
                     <option value="horizontal" selected>Horizontal</option>
@@ -366,7 +396,7 @@
             <div class="control-group">
                 <label for="zoom-slider">Zoom:</label>
                 <div class="control-row">
-                    <input type="range" id="zoom-slider" min="0" max="100" value="50">
+                    <input type="range" id="zoom-slider" min="0.1" max="100" step="0.1" value="1">
                     <span id="zoom-value">1.0x</span>
                 </div>
             </div>
@@ -393,6 +423,7 @@
     </div>
     <script>
         let DYNAMIC_AVAILABLE_IMAGES = [];
+        const MAX_COMPARISON_SLOTS = 3;
 
         document.addEventListener('DOMContentLoaded', () => {
             // DOM Elements
@@ -536,11 +567,8 @@
 
             comparisonModeSelect.addEventListener('change', (e) => {
                 comparisonMode = e.target.value;
-                onionSkinControls.style.display = comparisonMode === 'onion-skin' ? 'flex' : 'none';
-                manualSliderControls.style.display = comparisonMode === 'manual-slider' ? 'flex' : 'none';
-                // Bypassing requestViewUpdate as its debouncing flag was causing race conditions
-                // when the mode was changed immediately after an image load.
-                // A direct rAF call ensures the view always updates on mode change.
+                onionSkinControls.classList.toggle('hidden', comparisonMode !== 'onion-skin');
+                manualSliderControls.classList.toggle('hidden', comparisonMode !== 'manual-slider');
                 requestAnimationFrame(processLoadedImagesAndUpdateView);
             });
 
@@ -552,7 +580,6 @@
             });
 
             manualSliderDirection.addEventListener('change', () => {
-                // Direct rAF call to prevent race conditions, same as the main mode selector.
                 requestAnimationFrame(processLoadedImagesAndUpdateView);
             });
 
@@ -601,6 +628,7 @@
 
             resetViewBtn.addEventListener('click', resetApp);
             addFilesBtn.addEventListener('click', () => hiddenFileInput.click());
+            addSlotBtn.addEventListener('click', () => addNewSlot(false));
             hiddenFileInput.addEventListener('change', handleFileSelectionFromInput);
 
             // --- Image Selection and Loading ---
@@ -831,8 +859,8 @@
                 activeSlotData = [];
 
                 comparisonModeSelect.value = 'swipe-horizontal';
-                onionSkinControls.style.display = 'none';
-                manualSliderControls.style.display = 'none';
+                onionSkinControls.classList.add('hidden');
+                manualSliderControls.classList.add('hidden');
                 opacitySlider.value = 0.5;
 
                 currentSpeed = parseFloat(speedSlider.value);
@@ -881,17 +909,143 @@
                 event.target.value = null;
             }
 
-            // --- Drag & Drop ---
+            // --- Drag & Drop Events ---
             ['dragenter', 'dragover', 'dragleave', 'dragend'].forEach(eventName => {
                 mainViewArea.addEventListener(eventName, (e) => {
-                    e.preventDefault(); e.stopPropagation();
-                    mainViewArea.classList.toggle('drag-over', eventName === 'dragenter' || eventName === 'dragover');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (eventName === 'dragenter' || eventName === 'dragover')
+                        mainViewArea.classList.add('drag-over');
+                    else
+                        mainViewArea.classList.remove('drag-over');
                 });
             });
+
             mainViewArea.addEventListener('drop', (e) => {
-                e.preventDefault(); e.stopPropagation();
+                e.preventDefault();
+                e.stopPropagation();
                 mainViewArea.classList.remove('drag-over');
                 processDroppedOrSelectedFiles(e.dataTransfer.files);
+            });
+
+            // --- Viewport Calculations ---
+            function getVisibleImageRangePercents() {
+                if (!canvasWidth || !viewportWidth || currentZoom === 0)
+                    return { visibleStartPercent: 0, visibleEndPercent: 100 };
+                const imgCoordAtViewportLeft = -panX / currentZoom;
+                const imgCoordAtViewportRight = (viewportWidth - panX) / currentZoom;
+                let visibleStartPercent = (imgCoordAtViewportLeft / canvasWidth) * 100;
+                let visibleEndPercent = (imgCoordAtViewportRight / canvasWidth) * 100;
+                visibleStartPercent = Math.max(0, Math.min(100, visibleStartPercent));
+                visibleEndPercent = Math.max(0, Math.min(100, visibleEndPercent));
+                return { visibleStartPercent, visibleEndPercent };
+            }
+
+            // --- Animation ---
+            function animateLines() {
+                const isSlot1ClipperVisible = slotClippers[1] && !slotClippers[1].classList.contains('hidden');
+                const isSlot2ClipperVisible = slotClippers[2] && !slotClippers[2].classList.contains('hidden');
+                const comparingThreeImages = isSlot1ClipperVisible && isSlot2ClipperVisible;
+
+                if (!isSlot1ClipperVisible && !isSlot2ClipperVisible) {
+                    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                    return;
+                }
+
+                const { visibleStartPercent, visibleEndPercent } = getVisibleImageRangePercents();
+                let actualCursorRangeStart, actualCursorRangeEnd;
+
+                if (comparingThreeImages) {
+                    actualCursorRangeStart = visibleStartPercent;
+                    actualCursorRangeEnd = visibleEndPercent + currentDelay;
+                } else {
+                    actualCursorRangeStart = visibleStartPercent;
+                    actualCursorRangeEnd = visibleEndPercent;
+                }
+
+                lineAnimationCursor += currentSpeed * lineAnimationDirection;
+
+                if (lineAnimationCursor >= actualCursorRangeEnd) {
+                    lineAnimationCursor = actualCursorRangeEnd;
+                    lineAnimationDirection = -1;
+                } else if (lineAnimationCursor <= actualCursorRangeStart) {
+                    lineAnimationCursor = actualCursorRangeStart;
+                    lineAnimationDirection = 1;
+                }
+
+                if (isSlot1ClipperVisible) {
+                    slotClippers[1].style.width = `${Math.max(visibleStartPercent, Math.min(visibleEndPercent, lineAnimationCursor))}%`;
+                }
+                if (comparingThreeImages && isSlot2ClipperVisible) {
+                    slotClippers[2].style.width = `${Math.max(visibleStartPercent, Math.min(visibleEndPercent, lineAnimationCursor - currentDelay))}%`;
+                }
+
+                animationFrameId = requestAnimationFrame(animateLines);
+            }
+
+            // --- Mouse & Wheel Events for Panning/Zooming ---
+            mainViewArea.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return;
+                isPanning = true;
+                lastPanX_mouse = e.clientX;
+                lastPanY_mouse = e.clientY;
+                mainViewArea.classList.add('grabbing');
+                e.preventDefault();
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isPanning) return;
+                const dx = e.clientX - lastPanX_mouse;
+                const dy = e.clientY - lastPanY_mouse;
+                lastPanX_mouse = e.clientX;
+                lastPanY_mouse = e.clientY;
+                panX += dx;
+                panY += dy;
+                applyTransformations();
+            });
+
+            window.addEventListener('mouseup', (e) => {
+                if (e.button !== 0) return;
+                if (isPanning) {
+                    isPanning = false;
+                    mainViewArea.classList.remove('grabbing');
+                }
+            });
+
+            mainViewArea.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomFactor = 0.1;
+                const oldZoom = currentZoom;
+                const oldScaledCanvasHeight = canvasHeight * oldZoom;
+                if (!viewportWidth) return;
+                if (e.deltaY < 0)
+                    currentZoom = Math.min(parseFloat(zoomSlider.max), currentZoom * (1 + zoomFactor));
+                else
+                    currentZoom = Math.max(parseFloat(zoomSlider.min), currentZoom / (1 + zoomFactor));
+                zoomSlider.value = currentZoom;
+                updateControlSpans();
+
+                const rect = mainViewArea.getBoundingClientRect();
+                const mouseXInViewport = e.clientX - rect.left;
+                const mouseYInViewport = e.clientY - rect.top;
+
+                panX = mouseXInViewport - (mouseXInViewport - panX) * (currentZoom / oldZoom);
+
+                const newScaledCanvasHeight = canvasHeight * currentZoom;
+                if (oldScaledCanvasHeight >= viewportHeight && newScaledCanvasHeight < viewportHeight) {
+                    panY = (viewportHeight - newScaledCanvasHeight) / 2;
+                } else if (newScaledCanvasHeight >= viewportHeight) {
+                    panY = mouseYInViewport - (mouseYInViewport - panY) * (currentZoom / oldZoom);
+                } else {
+                    panY = (viewportHeight - newScaledCanvasHeight) / 2;
+                }
+                applyTransformations();
+            });
+
+            window.addEventListener('resize', () => {
+                updateMainViewAreaDimensions();
+                applyTransformations();
             });
 
             // --- Viewport Calculations ---
@@ -974,6 +1128,7 @@
             function setupManualSlider() {
                 const comparisonSlot = activeSlotData[1];
                 if (!comparisonSlot || !comparisonSlot.isLoaded) return;
+
                 manualSliderHandle.classList.remove('hidden');
 
                 const isHorizontal = manualSliderDirection.value === 'horizontal';
@@ -981,16 +1136,11 @@
                 manualSliderHandle.style.width = isHorizontal ? '2px' : '100%';
                 manualSliderHandle.style.height = isHorizontal ? '100%' : '2px';
 
-                const clipperWidthPercent = parseFloat(comparisonSlot.clipper.style.width) || 50;
-                const clipperHeightPercent = parseFloat(comparisonSlot.clipper.style.height) || 50;
-
-                if (isHorizontal) {
-                    manualSliderHandle.style.left = `${clipperWidthPercent}%`;
-                    manualSliderHandle.style.top = `50%`;
-                } else {
-                    manualSliderHandle.style.top = `${clipperHeightPercent}%`;
-                    manualSliderHandle.style.left = `50%`;
-                }
+                // Initialize at 50% of the container
+                comparisonSlot.clipper.style.width = '50%';
+                comparisonSlot.clipper.style.height = '50%';
+                manualSliderHandle.style.left = '50%';
+                manualSliderHandle.style.top = '50%';
             }
 
 
@@ -1008,20 +1158,36 @@
             window.addEventListener('mousemove', (e) => {
                 if (!isDraggingManualSlider) return;
 
-                const imageStackRect = imageStack.getBoundingClientRect();
+                const viewRect = mainViewArea.getBoundingClientRect();
                 const isHorizontal = manualSliderDirection.value === 'horizontal';
 
                 let percent;
                 if (isHorizontal) {
-                    const x = e.clientX - imageStackRect.left;
-                    percent = Math.max(0, Math.min(100, (x / imageStackRect.width) * 100));
-                    manualSliderHandle.style.left = `${percent}%`;
-                    if (activeSlotData[1]) activeSlotData[1].clipper.style.width = `${percent}%`;
+                    // Constrain mouse position to the viewport
+                    const x = Math.max(viewRect.left, Math.min(viewRect.right, e.clientX));
+                    // Calculate percentage relative to the viewport
+                    percent = ((x - viewRect.left) / viewRect.width) * 100;
                 } else {
-                    const y = e.clientY - imageStackRect.top;
-                    percent = Math.max(0, Math.min(100, (y / imageStackRect.height) * 100));
-                    manualSliderHandle.style.top = `${percent}%`;
-                    if (activeSlotData[1]) activeSlotData[1].clipper.style.height = `${percent}%`;
+                    const y = Math.max(viewRect.top, Math.min(viewRect.bottom, e.clientY));
+                    percent = ((y - viewRect.top) / viewRect.height) * 100;
+                }
+
+                // This part maps the viewport percentage to the image clip percentage
+                const imageStackRect = imageStack.getBoundingClientRect();
+                let clipPercent;
+
+                if (isHorizontal) {
+                    const x_in_image_stack = (viewRect.width * (percent / 100)) + viewRect.left - imageStackRect.left;
+                    clipPercent = (x_in_image_stack / imageStackRect.width) * 100;
+                    clipPercent = Math.max(0, Math.min(100, clipPercent));
+                    manualSliderHandle.style.left = `${clipPercent}%`;
+                    if (activeSlotData[1]) activeSlotData[1].clipper.style.width = `${clipPercent}%`;
+                } else {
+                    const y_in_image_stack = (viewRect.height * (percent / 100)) + viewRect.top - imageStackRect.top;
+                    clipPercent = (y_in_image_stack / imageStackRect.height) * 100;
+                    clipPercent = Math.max(0, Math.min(100, clipPercent));
+                    manualSliderHandle.style.top = `${clipPercent}%`;
+                    if (activeSlotData[1]) activeSlotData[1].clipper.style.height = `${clipPercent}%`;
                 }
             });
 
