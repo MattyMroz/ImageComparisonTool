@@ -987,7 +987,14 @@
             }
 
             // --- Mouse & Wheel Events for Panning/Zooming ---
+            manualSliderHandle.addEventListener('mousedown', (e) => {
+                e.preventDefault(); // Prevent text selection/drag-and-drop
+                isDraggingManualSlider = true;
+            });
+            manualSliderHandle.addEventListener('dragstart', (e) => e.preventDefault());
+
             mainViewArea.addEventListener('mousedown', (e) => {
+                if (e.target === manualSliderHandle || e.target.parentElement === manualSliderHandle) return;
                 if (e.button !== 0) return;
                 isPanning = true;
                 lastPanX_mouse = e.clientX;
@@ -1140,8 +1147,10 @@
                 // Reset position and clipping
                 manualSliderHandle.style.left = '50%';
                 manualSliderHandle.style.top = '50%';
-                comparisonSlot.clipper.style.width = '50%';
-                comparisonSlot.clipper.style.height = '50%';
+                if (comparisonSlot.clipper) {
+                    comparisonSlot.clipper.style.width = '50%';
+                    comparisonSlot.clipper.style.height = '50%';
+                }
             }
 
 
@@ -1177,11 +1186,15 @@
                         const x = Math.max(viewRect.left, Math.min(viewRect.right, e.clientX));
                         const percent = ((x - viewRect.left) / viewRect.width) * 100;
                         manualSliderHandle.style.left = `${percent}%`;
+                        // Y is locked to 50%
+                        manualSliderHandle.style.top = '50%';
                         if (activeSlotData[1]) activeSlotData[1].clipper.style.width = `${percent}%`;
                     } else {
                         const y = Math.max(viewRect.top, Math.min(viewRect.bottom, e.clientY));
                         const percent = ((y - viewRect.top) / viewRect.height) * 100;
                         manualSliderHandle.style.top = `${percent}%`;
+                        // X is locked to 50%
+                        manualSliderHandle.style.left = '50%';
                         if (activeSlotData[1]) activeSlotData[1].clipper.style.height = `${percent}%`;
                     }
                 }
