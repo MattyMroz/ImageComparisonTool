@@ -471,6 +471,8 @@
             let pendingViewUpdate = false;
             let firstLoadDone = false;
             let isDraggingManualSlider = false;
+            let animationCursor = 0;
+            let animationDirection = 1;
 
             // --- UI Control Updates ---
             function updateControlSpans() {
@@ -1094,8 +1096,8 @@
                 const actualCursorRangeEnd = rangeEnd + totalDelay;
 
                 if(!animationFrameId) { // Set initial cursor position
-                    let animationCursor = rangeStart;
-                    let animationDirection = 1;
+                    animationCursor = rangeStart;
+                    animationDirection = 1;
                 }
 
                 animationCursor += currentSpeed * animationDirection;
