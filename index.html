@@ -273,8 +273,8 @@
             width: 2px;
             height: 100%;
             background-color: rgba(255, 255, 255, 0.7);
-            cursor: ew-resize;
             z-index: 100;
+            pointer-events: none;
         }
 
         #manual-slider-handle::after {
@@ -412,9 +412,9 @@
     <div id="app-container">
         <div id="main-view-area" class="no-images-loaded">
             <div class="image-stack hidden">
-                <div id="manual-slider-handle" class="hidden"></div>
                 <!-- Image slots will be dynamically generated here -->
             </div>
+            <div id="manual-slider-handle" class="hidden"></div>
             <div id="drop-info-wrapper">
                 <div id="drop-info-icon">📤</div>
                 <div id="drop-info-text">Drop images here or click "Add Files"</div>
@@ -1130,96 +1130,77 @@
             function setupManualSlider() {
                 const comparisonSlot = activeSlotData[1];
                 if (!comparisonSlot || !comparisonSlot.isLoaded) return;
-
                 manualSliderHandle.classList.remove('hidden');
 
                 const isHorizontal = manualSliderDirection.value === 'horizontal';
-                manualSliderHandle.style.cursor = isHorizontal ? 'ew-resize' : 'ns-resize';
                 manualSliderHandle.style.width = isHorizontal ? '2px' : '100%';
                 manualSliderHandle.style.height = isHorizontal ? '100%' : '2px';
-
-                // Initialize at 50% of the container
-                comparisonSlot.clipper.style.width = '50%';
-                comparisonSlot.clipper.style.height = '50%';
-                manualSliderHandle.style.left = '50%';
-                manualSliderHandle.style.top = '50%';
             }
-
-
-            manualSliderHandle.addEventListener('mousedown', (e) => {
-                e.preventDefault(); // Prevent text selection/drag-and-drop
-                isDraggingManualSlider = true;
-            });
-            manualSliderHandle.addEventListener('dragstart', (e) => e.preventDefault());
-
-
-            window.addEventListener('mouseup', () => {
-                isDraggingManualSlider = false;
-            });
-
-            window.addEventListener('mousemove', (e) => {
-                if (!isDraggingManualSlider) return;
-
-                const viewRect = mainViewArea.getBoundingClientRect();
-                const isHorizontal = manualSliderDirection.value === 'horizontal';
-
-                let percent;
-                if (isHorizontal) {
-                    // Constrain mouse position to the viewport
-                    const x = Math.max(viewRect.left, Math.min(viewRect.right, e.clientX));
-                    // Calculate percentage relative to the viewport
-                    percent = ((x - viewRect.left) / viewRect.width) * 100;
-                } else {
-                    const y = Math.max(viewRect.top, Math.min(viewRect.bottom, e.clientY));
-                    percent = ((y - viewRect.top) / viewRect.height) * 100;
-                }
-
-                // This part maps the viewport percentage to the image clip percentage
-                const imageStackRect = imageStack.getBoundingClientRect();
-                let clipPercent;
-
-                if (isHorizontal) {
-                    const x_in_image_stack = (viewRect.width * (percent / 100)) + viewRect.left - imageStackRect.left;
-                    clipPercent = (x_in_image_stack / imageStackRect.width) * 100;
-                    clipPercent = Math.max(0, Math.min(100, clipPercent));
-                    manualSliderHandle.style.left = `${clipPercent}%`;
-                    if (activeSlotData[1]) activeSlotData[1].clipper.style.width = `${clipPercent}%`;
-                } else {
-                    const y_in_image_stack = (viewRect.height * (percent / 100)) + viewRect.top - imageStackRect.top;
-                    clipPercent = (y_in_image_stack / imageStackRect.height) * 100;
-                    clipPercent = Math.max(0, Math.min(100, clipPercent));
-                    manualSliderHandle.style.top = `${clipPercent}%`;
-                    if (activeSlotData[1]) activeSlotData[1].clipper.style.height = `${clipPercent}%`;
-                }
-            });
 
 
             // --- Mouse & Wheel Events ---
             mainViewArea.addEventListener('mousedown', (e) => {
-                if (e.target === manualSliderHandle || e.target.parentElement === manualSliderHandle) return;
                 if (e.button !== 0) return;
-                isPanning = true;
+
+                if (comparisonMode === 'manual-slider') {
+                    isDraggingManualSlider = true;
+                } else {
+                    isPanning = true;
+                }
                 lastPanX_mouse = e.clientX; lastPanY_mouse = e.clientY;
                 mainViewArea.classList.add('grabbing');
                 e.preventDefault();
             });
             window.addEventListener('mousemove', (e) => {
-                if (!isPanning || isDraggingManualSlider) return;
-                panX += e.clientX - lastPanX_mouse;
-                panY += e.clientY - lastPanY_mouse;
-                lastPanX_mouse = e.clientX; lastPanY_mouse = e.clientY;
-                applyTransformations();
+                if (isPanning) {
+                    panX += e.clientX - lastPanX_mouse;
+                    panY += e.clientY - lastPanY_mouse;
+                    lastPanX_mouse = e.clientX;
+                    lastPanY_mouse = e.clientY;
+                    applyTransformations();
+                } else if (isDraggingManualSlider) {
+                    const viewRect = mainViewArea.getBoundingClientRect();
+                    const isHorizontal = manualSliderDirection.value === 'horizontal';
+                    let percent;
+                    if (isHorizontal) {
+                        const x = Math.max(viewRect.left, Math.min(viewRect.right, e.clientX));
+                        percent = ((x - viewRect.left) / viewRect.width) * 100;
+                    } else {
+                        const y = Math.max(viewRect.top, Math.min(viewRect.bottom, e.clientY));
+                        percent = ((y - viewRect.top) / viewRect.height) * 100;
+                    }
+
+                    const imageStackRect = imageStack.getBoundingClientRect();
+                    let clipPercent;
+                    if (isHorizontal) {
+                        const x_in_image_stack = (viewRect.width * (percent / 100)) + viewRect.left - imageStackRect.left;
+                        clipPercent = (x_in_image_stack / imageStackRect.width) * 100;
+                        if (activeSlotData[1]) activeSlotData[1].clipper.style.width = `${clipPercent}%`;
+                    } else {
+                        const y_in_image_stack = (viewRect.height * (percent / 100)) + viewRect.top - imageStackRect.top;
+                        clipPercent = (y_in_image_stack / imageStackRect.height) * 100;
+                        if (activeSlotData[1]) activeSlotData[1].clipper.style.height = `${clipPercent}%`;
+                    }
+                }
             });
             window.addEventListener('mouseup', (e) => {
                 if (e.button !== 0) return;
-                if (isPanning) { isPanning = false; mainViewArea.classList.remove('grabbing'); }
+                isPanning = false;
+                isDraggingManualSlider = false;
+                mainViewArea.classList.remove('grabbing');
             });
             mainViewArea.addEventListener('wheel', (e) => {
                 e.preventDefault();
+                const zoomFactor = 0.1;
                 const oldZoom = currentZoom;
-                const newSliderValue = parseFloat(zoomSlider.value) + (e.deltaY > 0 ? -2 : 2);
-                zoomSlider.value = Math.max(0, Math.min(100, newSliderValue));
-                currentZoom = getZoomFromSlider(zoomSlider.value);
+                if (!viewportWidth) return;
+
+                if (e.deltaY < 0) {
+                    currentZoom = Math.min(20, currentZoom * (1 + zoomFactor));
+                } else {
+                    currentZoom = Math.max(0.1, currentZoom / (1 + zoomFactor));
+                }
+                zoomSlider.value = getSliderFromZoom(currentZoom);
                 updateControlSpans();
 
                 const rect = mainViewArea.getBoundingClientRect();
@@ -1228,7 +1209,7 @@
 
                 panX = mouseXInViewport - (mouseXInViewport - panX) * (currentZoom / oldZoom);
                 if (canvasHeight * currentZoom >= viewportHeight) {
-                    panY = mouseYInViewport - (mouseYInViewport - panY) * (currentZoom / oldZoom);
+                     panY = mouseYInViewport - (mouseYInViewport - panY) * (currentZoom / oldZoom);
                 } else {
                     panY = (viewportHeight - canvasHeight * currentZoom) / 2;
                 }
