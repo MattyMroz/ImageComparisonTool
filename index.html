@@ -265,30 +265,6 @@
             display: block;
         }
 
-        #manual-slider-handle {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 2px;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.7);
-            cursor: ew-resize;
-            z-index: 100;
-        }
-
-        #manual-slider-handle::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: rgba(255, 255, 255, 0.7);
-            border: 2px solid #333;
-        }
 
         #slot0-container {
             z-index: 1;
@@ -342,7 +318,6 @@
                     <option value="swipe-vertical">Swipe (Vertical)</option>
                     <option value="fade">Fade</option>
                     <option value="onion-skin">Onion Skin</option>
-                    <option value="manual-slider">Manual Slider</option>
                 </select>
             </div>
             <div id="onion-skin-controls" class="control-group hidden">
@@ -351,13 +326,6 @@
                     <input type="range" id="opacity-slider" min="0" max="1" step="0.01" value="0.5">
                     <span id="opacity-value">50%</span>
                 </div>
-            </div>
-            <div id="manual-slider-controls" class="control-group hidden">
-                <label for="manual-slider-direction">Direction:</label>
-                <select id="manual-slider-direction">
-                    <option value="horizontal" selected>Horizontal</option>
-                    <option value="vertical">Vertical</option>
-                </select>
             </div>
         </div>
         <div class="separator"></div>
@@ -414,7 +382,6 @@
             <div class="image-stack hidden">
                 <!-- Image slots will be dynamically generated here -->
             </div>
-            <div id="manual-slider-handle" class="hidden"></div>
             <div id="drop-info-wrapper">
                 <div id="drop-info-icon">📤</div>
                 <div id="drop-info-text">Drop images here or click "Add Files"</div>
@@ -450,11 +417,6 @@
             const onionSkinControls = document.getElementById('onion-skin-controls');
             const opacitySlider = document.getElementById('opacity-slider');
             const opacityValue = document.getElementById('opacity-value');
-            const manualSliderControls = document.getElementById('manual-slider-controls');
-            const manualSliderDirection = document.getElementById('manual-slider-direction');
-            const manualSliderHandle = document.getElementById('manual-slider-handle');
-
-
             // State
             let activeSlotData = [];
             let comparisonMode = 'swipe-horizontal';
@@ -470,7 +432,6 @@
             let animationFrameId = null;
             let pendingViewUpdate = false;
             let firstLoadDone = false;
-            let isDraggingManualSlider = false;
             let animationCursor = 0;
             let animationDirection = 1;
 
@@ -486,6 +447,7 @@
 
             // --- Slot Management ---
             function addNewSlot(isBaseSlot = false) {
+                console.log(`Adding new slot, index: ${activeSlotData.length}`);
                 const slotIndex = activeSlotData.length;
                 const isComparisonSlot = !isBaseSlot;
 
@@ -570,7 +532,6 @@
             comparisonModeSelect.addEventListener('change', (e) => {
                 comparisonMode = e.target.value;
                 onionSkinControls.classList.toggle('hidden', comparisonMode !== 'onion-skin');
-                manualSliderControls.classList.toggle('hidden', comparisonMode !== 'manual-slider');
                 requestAnimationFrame(processLoadedImagesAndUpdateView);
             });
 
@@ -581,9 +542,6 @@
                 updateControlSpans();
             });
 
-            manualSliderDirection.addEventListener('change', () => {
-                requestAnimationFrame(processLoadedImagesAndUpdateView);
-            });
 
 
             addSlotBtn.addEventListener('click', () => addNewSlot(false));
@@ -702,7 +660,6 @@
             function processLoadedImagesAndUpdateView() {
                 if (animationFrameId) cancelAnimationFrame(animationFrameId);
                 animationFrameId = null;
-                manualSliderHandle.classList.add('hidden');
 
                 const activeImagesForCanvas = activeSlotData.filter(d => d.isLoaded && d.src);
 
@@ -751,8 +708,6 @@
                         animate();
                     } else if (comparisonMode === 'onion-skin') {
                         activeSlotData[1].container.style.opacity = opacitySlider.value;
-                    } else if (comparisonMode === 'manual-slider') {
-                        setupManualSlider();
                     }
                 }
             }
@@ -771,7 +726,6 @@
                     comparisonModeSelect.value = 'swipe-horizontal';
                     comparisonMode = 'swipe-horizontal';
                     onionSkinControls.style.display = 'none';
-                    manualSliderControls.style.display = 'none';
                 }
             }
 
@@ -824,10 +778,6 @@
 
 
                 imageStack.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
-
-                if (comparisonMode === 'manual-slider') {
-                    setupManualSlider();
-                }
             }
 
             function resetPanAndZoom(resetSliders = true) {
@@ -846,23 +796,15 @@
             }
 
             function resetApp() {
+                console.log("Resetting app...");
                 if (animationFrameId) cancelAnimationFrame(animationFrameId);
                 animationFrameId = null;
-
-                // Clear all children except the handle
-                while (imageStack.firstChild && imageStack.firstChild !== manualSliderHandle) {
-                    imageStack.removeChild(imageStack.firstChild);
-                }
-                 while (imageStack.lastChild && imageStack.lastChild !== manualSliderHandle) {
-                    imageStack.removeChild(imageStack.lastChild);
-                }
 
                 imageSlotsControls.innerHTML = '';
                 activeSlotData = [];
 
                 comparisonModeSelect.value = 'swipe-horizontal';
                 onionSkinControls.classList.add('hidden');
-                manualSliderControls.classList.add('hidden');
                 opacitySlider.value = 0.5;
 
                 currentSpeed = parseFloat(speedSlider.value);
@@ -871,11 +813,9 @@
                 resetPanAndZoom(true);
                 updateControlSpans();
 
-                addNewSlot(true); // Base Slot
-                addNewSlot(false); // First Comparison Slot
-
                 processDroppedOrSelectedFiles([]); // Clear selections
                 requestViewUpdate();
+                console.log("App reset.");
             }
 
             // --- File Handling ---
@@ -928,133 +868,6 @@
                 e.stopPropagation();
                 mainViewArea.classList.remove('drag-over');
                 processDroppedOrSelectedFiles(e.dataTransfer.files);
-            });
-
-            // --- Viewport Calculations ---
-            function getVisibleImageRangePercents() {
-                if (!canvasWidth || !viewportWidth || currentZoom === 0)
-                    return { visibleStartPercent: 0, visibleEndPercent: 100 };
-                const imgCoordAtViewportLeft = -panX / currentZoom;
-                const imgCoordAtViewportRight = (viewportWidth - panX) / currentZoom;
-                let visibleStartPercent = (imgCoordAtViewportLeft / canvasWidth) * 100;
-                let visibleEndPercent = (imgCoordAtViewportRight / canvasWidth) * 100;
-                visibleStartPercent = Math.max(0, Math.min(100, visibleStartPercent));
-                visibleEndPercent = Math.max(0, Math.min(100, visibleEndPercent));
-                return { visibleStartPercent, visibleEndPercent };
-            }
-
-            // --- Animation ---
-            function animateLines() {
-                const isSlot1ClipperVisible = slotClippers[1] && !slotClippers[1].classList.contains('hidden');
-                const isSlot2ClipperVisible = slotClippers[2] && !slotClippers[2].classList.contains('hidden');
-                const comparingThreeImages = isSlot1ClipperVisible && isSlot2ClipperVisible;
-
-                if (!isSlot1ClipperVisible && !isSlot2ClipperVisible) {
-                    if (animationFrameId) cancelAnimationFrame(animationFrameId);
-                    animationFrameId = null;
-                    return;
-                }
-
-                const { visibleStartPercent, visibleEndPercent } = getVisibleImageRangePercents();
-                let actualCursorRangeStart, actualCursorRangeEnd;
-
-                if (comparingThreeImages) {
-                    actualCursorRangeStart = visibleStartPercent;
-                    actualCursorRangeEnd = visibleEndPercent + currentDelay;
-                } else {
-                    actualCursorRangeStart = visibleStartPercent;
-                    actualCursorRangeEnd = visibleEndPercent;
-                }
-
-                lineAnimationCursor += currentSpeed * lineAnimationDirection;
-
-                if (lineAnimationCursor >= actualCursorRangeEnd) {
-                    lineAnimationCursor = actualCursorRangeEnd;
-                    lineAnimationDirection = -1;
-                } else if (lineAnimationCursor <= actualCursorRangeStart) {
-                    lineAnimationCursor = actualCursorRangeStart;
-                    lineAnimationDirection = 1;
-                }
-
-                if (isSlot1ClipperVisible) {
-                    slotClippers[1].style.width = `${Math.max(visibleStartPercent, Math.min(visibleEndPercent, lineAnimationCursor))}%`;
-                }
-                if (comparingThreeImages && isSlot2ClipperVisible) {
-                    slotClippers[2].style.width = `${Math.max(visibleStartPercent, Math.min(visibleEndPercent, lineAnimationCursor - currentDelay))}%`;
-                }
-
-                animationFrameId = requestAnimationFrame(animateLines);
-            }
-
-            // --- Mouse & Wheel Events for Panning/Zooming ---
-            manualSliderHandle.addEventListener('mousedown', (e) => {
-                e.preventDefault(); // Prevent text selection/drag-and-drop
-                isDraggingManualSlider = true;
-            });
-            manualSliderHandle.addEventListener('dragstart', (e) => e.preventDefault());
-
-            mainViewArea.addEventListener('mousedown', (e) => {
-                if (e.target === manualSliderHandle || e.target.parentElement === manualSliderHandle) return;
-                if (e.button !== 0) return;
-                isPanning = true;
-                lastPanX_mouse = e.clientX;
-                lastPanY_mouse = e.clientY;
-                mainViewArea.classList.add('grabbing');
-                e.preventDefault();
-            });
-
-            window.addEventListener('mousemove', (e) => {
-                if (!isPanning) return;
-                const dx = e.clientX - lastPanX_mouse;
-                const dy = e.clientY - lastPanY_mouse;
-                lastPanX_mouse = e.clientX;
-                lastPanY_mouse = e.clientY;
-                panX += dx;
-                panY += dy;
-                applyTransformations();
-            });
-
-            window.addEventListener('mouseup', (e) => {
-                if (e.button !== 0) return;
-                if (isPanning) {
-                    isPanning = false;
-                    mainViewArea.classList.remove('grabbing');
-                }
-            });
-
-            mainViewArea.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                const zoomFactor = 0.1;
-                const oldZoom = currentZoom;
-                const oldScaledCanvasHeight = canvasHeight * oldZoom;
-                if (!viewportWidth) return;
-                if (e.deltaY < 0)
-                    currentZoom = Math.min(parseFloat(zoomSlider.max), currentZoom * (1 + zoomFactor));
-                else
-                    currentZoom = Math.max(parseFloat(zoomSlider.min), currentZoom / (1 + zoomFactor));
-                zoomSlider.value = currentZoom;
-                updateControlSpans();
-
-                const rect = mainViewArea.getBoundingClientRect();
-                const mouseXInViewport = e.clientX - rect.left;
-                const mouseYInViewport = e.clientY - rect.top;
-
-                panX = mouseXInViewport - (mouseXInViewport - panX) * (currentZoom / oldZoom);
-
-                const newScaledCanvasHeight = canvasHeight * currentZoom;
-                if (oldScaledCanvasHeight >= viewportHeight && newScaledCanvasHeight < viewportHeight) {
-                    panY = (viewportHeight - newScaledCanvasHeight) / 2;
-                } else if (newScaledCanvasHeight >= viewportHeight) {
-                    panY = mouseYInViewport - (mouseYInViewport - panY) * (currentZoom / oldZoom);
-                } else {
-                    panY = (viewportHeight - newScaledCanvasHeight) / 2;
-                }
-                applyTransformations();
-            });
-
-            window.addEventListener('resize', () => {
-                updateMainViewAreaDimensions();
-                applyTransformations();
             });
 
             // --- Viewport Calculations ---
@@ -1153,17 +966,8 @@
                 }
             }
 
-
-            manualSliderHandle.addEventListener('mousedown', (e) => {
-                e.preventDefault(); // Prevent text selection/drag-and-drop
-                isDraggingManualSlider = true;
-            });
-            manualSliderHandle.addEventListener('dragstart', (e) => e.preventDefault());
-
-
             // --- Mouse & Wheel Events ---
             mainViewArea.addEventListener('mousedown', (e) => {
-                if (e.target === manualSliderHandle || e.target.parentElement === manualSliderHandle) return;
                 if (e.button !== 0) return;
 
                 isPanning = true;
@@ -1178,33 +982,14 @@
                     lastPanX_mouse = e.clientX;
                     lastPanY_mouse = e.clientY;
                     applyTransformations();
-                } else if (isDraggingManualSlider) {
-                    const viewRect = mainViewArea.getBoundingClientRect();
-                    const isHorizontal = manualSliderDirection.value === 'horizontal';
-
-                    if (isHorizontal) {
-                        const x = Math.max(viewRect.left, Math.min(viewRect.right, e.clientX));
-                        const percent = ((x - viewRect.left) / viewRect.width) * 100;
-                        manualSliderHandle.style.left = `${percent}%`;
-                        // Y is locked to 50%
-                        manualSliderHandle.style.top = '50%';
-                        if (activeSlotData[1]) activeSlotData[1].clipper.style.width = `${percent}%`;
-                    } else {
-                        const y = Math.max(viewRect.top, Math.min(viewRect.bottom, e.clientY));
-                        const percent = ((y - viewRect.top) / viewRect.height) * 100;
-                        manualSliderHandle.style.top = `${percent}%`;
-                        // X is locked to 50%
-                        manualSliderHandle.style.left = '50%';
-                        if (activeSlotData[1]) activeSlotData[1].clipper.style.height = `${percent}%`;
-                    }
                 }
             });
             window.addEventListener('mouseup', (e) => {
                 if (e.button !== 0) return;
                 isPanning = false;
-                isDraggingManualSlider = false;
                 mainViewArea.classList.remove('grabbing');
             });
+
             mainViewArea.addEventListener('wheel', (e) => {
                 e.preventDefault();
                 const zoomFactor = 0.1;
@@ -1239,6 +1024,8 @@
 
             // --- Initial Setup ---
             resetApp();
+            addNewSlot(true); // Base Slot
+            addNewSlot(false); // First Comparison Slot
         });
     </script>
 </body>
