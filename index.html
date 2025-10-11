@@ -273,8 +273,8 @@
             width: 2px;
             height: 100%;
             background-color: rgba(255, 255, 255, 0.7);
+            cursor: ew-resize;
             z-index: 100;
-            pointer-events: none;
         }
 
         #manual-slider-handle::after {
@@ -1133,20 +1133,31 @@
                 manualSliderHandle.classList.remove('hidden');
 
                 const isHorizontal = manualSliderDirection.value === 'horizontal';
+                manualSliderHandle.style.cursor = isHorizontal ? 'ew-resize' : 'ns-resize';
                 manualSliderHandle.style.width = isHorizontal ? '2px' : '100%';
                 manualSliderHandle.style.height = isHorizontal ? '100%' : '2px';
+
+                // Reset position and clipping
+                manualSliderHandle.style.left = '50%';
+                manualSliderHandle.style.top = '50%';
+                comparisonSlot.clipper.style.width = '50%';
+                comparisonSlot.clipper.style.height = '50%';
             }
+
+
+            manualSliderHandle.addEventListener('mousedown', (e) => {
+                e.preventDefault(); // Prevent text selection/drag-and-drop
+                isDraggingManualSlider = true;
+            });
+            manualSliderHandle.addEventListener('dragstart', (e) => e.preventDefault());
 
 
             // --- Mouse & Wheel Events ---
             mainViewArea.addEventListener('mousedown', (e) => {
+                if (e.target === manualSliderHandle || e.target.parentElement === manualSliderHandle) return;
                 if (e.button !== 0) return;
 
-                if (comparisonMode === 'manual-slider') {
-                    isDraggingManualSlider = true;
-                } else {
-                    isPanning = true;
-                }
+                isPanning = true;
                 lastPanX_mouse = e.clientX; lastPanY_mouse = e.clientY;
                 mainViewArea.classList.add('grabbing');
                 e.preventDefault();
@@ -1161,25 +1172,17 @@
                 } else if (isDraggingManualSlider) {
                     const viewRect = mainViewArea.getBoundingClientRect();
                     const isHorizontal = manualSliderDirection.value === 'horizontal';
-                    let percent;
+
                     if (isHorizontal) {
                         const x = Math.max(viewRect.left, Math.min(viewRect.right, e.clientX));
-                        percent = ((x - viewRect.left) / viewRect.width) * 100;
+                        const percent = ((x - viewRect.left) / viewRect.width) * 100;
+                        manualSliderHandle.style.left = `${percent}%`;
+                        if (activeSlotData[1]) activeSlotData[1].clipper.style.width = `${percent}%`;
                     } else {
                         const y = Math.max(viewRect.top, Math.min(viewRect.bottom, e.clientY));
-                        percent = ((y - viewRect.top) / viewRect.height) * 100;
-                    }
-
-                    const imageStackRect = imageStack.getBoundingClientRect();
-                    let clipPercent;
-                    if (isHorizontal) {
-                        const x_in_image_stack = (viewRect.width * (percent / 100)) + viewRect.left - imageStackRect.left;
-                        clipPercent = (x_in_image_stack / imageStackRect.width) * 100;
-                        if (activeSlotData[1]) activeSlotData[1].clipper.style.width = `${clipPercent}%`;
-                    } else {
-                        const y_in_image_stack = (viewRect.height * (percent / 100)) + viewRect.top - imageStackRect.top;
-                        clipPercent = (y_in_image_stack / imageStackRect.height) * 100;
-                        if (activeSlotData[1]) activeSlotData[1].clipper.style.height = `${clipPercent}%`;
+                        const percent = ((y - viewRect.top) / viewRect.height) * 100;
+                        manualSliderHandle.style.top = `${percent}%`;
+                        if (activeSlotData[1]) activeSlotData[1].clipper.style.height = `${percent}%`;
                     }
                 }
             });
