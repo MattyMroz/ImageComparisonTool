@@ -21,7 +21,7 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #1e1e1e;
+            background-color: #1a0a2e;
             color: #eee;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
@@ -42,16 +42,17 @@
 
 
         #controls {
-            padding: 12px 20px;
-            background-color: #333;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            padding: 15px 25px;
+            background: linear-gradient(to bottom, #2d1b4e, #1f0f3d);
+            box-shadow: 0 3px 12px rgba(138, 43, 226, 0.3);
             z-index: 100;
             display: flex;
-            gap: 15px;
-            align-items: flex-start;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
             flex-wrap: wrap;
-            border-bottom: 1px solid #444;
-            margin: 0 -15px;
+            border-bottom: 2px solid #8a2be2;
+            margin: 0;
             padding-left: 35px;
             padding-right: 35px;
         }
@@ -59,15 +60,49 @@
         .control-section {
             display: flex;
             gap: 15px;
-            align-items: flex-start;
+            align-items: center;
+            flex-wrap: nowrap;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .control-section.allow-wrap {
+            flex-wrap: wrap;
+        }
+
+        #image-slots-controls {
+            max-width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: #8a2be2 #2d1554;
+        }
+
+        #image-slots-controls::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        #image-slots-controls::-webkit-scrollbar-track {
+            background: #2d1554;
+            border-radius: 3px;
+        }
+
+        #image-slots-controls::-webkit-scrollbar-thumb {
+            background: #8a2be2;
+            border-radius: 3px;
+        }
+
+        #image-slots-controls::-webkit-scrollbar-thumb:hover {
+            background: #a855f7;
         }
 
         .separator {
-            color: #555;
-            font-size: 1.5em;
-            line-height: 2.5;
-            padding: 0 5px;
-            align-self: center;
+            width: 2px;
+            background: linear-gradient(to bottom, transparent, #8a2be2, transparent);
+            align-self: stretch;
+            margin: 5px 0;
+            flex-shrink: 0;
+            min-height: 40px;
         }
 
         .control-group {
@@ -78,9 +113,12 @@
         }
 
         .control-group label {
-            margin-bottom: 2px;
+            margin-bottom: 3px;
             font-size: 0.85em;
-            color: #bbb;
+            color: #aaa;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .control-row {
@@ -91,32 +129,77 @@
 
         #controls select,
         #controls button {
-            padding: 7px 10px;
-            border-radius: 4px;
-            border: 1px solid #555;
-            background-color: #444;
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: 1px solid #6a1bb2;
+            background-color: #2d1554;
             color: #eee;
             font-size: 0.9em;
+            transition: all 0.2s ease;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a855f7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 16px;
+            padding-right: 35px;
+        }
+
+        #controls button {
+            background-image: none;
+            padding-right: 14px;
+        }
+
+        #controls select:hover {
+            background-color: #3d1d64;
+            border-color: #8a2be2;
+        }
+
+        #controls select option {
+            background-color: #2d1554 !important;
+            background: #2d1554 !important;
+            color: #eee !important;
+            padding: 8px !important;
+        }
+
+        #controls select option:hover {
+            background-color: #6a1bb2 !important;
+            background: #6a1bb2 !important;
+            color: #fff !important;
+        }
+
+        #controls select option:checked,
+        #controls select option:focus {
+            background-color: #4a1580 !important;
+            background: linear-gradient(#4a1580, #4a1580) !important;
+            color: #fff !important;
         }
 
         #controls input[type="range"] {
             padding: 0;
             margin: 7px 0;
-            border-radius: 4px;
-            border: 0 solid #555;
-            background-color: #444;
+            border-radius: 6px;
+            border: 0;
+            background-color: #3a3a3a;
             color: #eee;
             font-size: 0.9em;
             vertical-align: middle;
-            min-width: 100px;
-            accent-color: #007bff;
+            min-width: 120px;
+            accent-color: #8a2be2;
             box-sizing: border-box;
+            cursor: pointer;
+            height: 6px;
+        }
+
+        #controls input[type="range"]:hover {
+            accent-color: #a855f7;
         }
 
         #controls select:focus,
         #controls input[type="range"]:focus {
             outline: none;
-            border-color: #007bff;
+            border-color: #8a2be2;
         }
 
         #controls select {
@@ -124,48 +207,130 @@
         }
 
         #controls span {
-            min-width: 45px;
+            min-width: 55px;
             display: inline-block;
-            text-align: left;
+            text-align: center;
             font-weight: 600;
-            color: #fff;
-            font-size: 0.9em;
+            color: #a855f7;
+            font-size: 0.95em;
+            background-color: rgba(138, 43, 226, 0.15);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(138, 43, 226, 0.4);
         }
 
         #controls button {
             cursor: pointer;
-            background-color: #575757;
-            border: none;
+            background: linear-gradient(to bottom, #6a1bb2, #4a1580);
+            border: 1px solid #8a2be2;
             font-weight: 500;
-            min-width: 100px;
+            min-width: 110px;
             text-align: center;
+            box-shadow: 0 2px 4px rgba(138, 43, 226, 0.3);
         }
 
         #controls button:hover {
-            background-color: #686868;
+            background: linear-gradient(to bottom, #7a2bc2, #5a1d90);
+            border-color: #a855f7;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 6px rgba(138, 43, 226, 0.5);
+        }
+
+        #controls button:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(138, 43, 226, 0.3);
         }
 
         #reset-view-btn {
-            background-color: #d9534f;
+            background: linear-gradient(to bottom, #dc2626, #b91c1c);
+            border-color: #991b1b;
         }
 
         #reset-view-btn:hover {
-            background-color: #c9302c;
+            background: linear-gradient(to bottom, #ef4444, #dc2626);
+            border-color: #dc2626;
         }
 
         #add-files-btn {
-            background-color: #5cb85c;
+            background: linear-gradient(to bottom, #16a34a, #15803d);
+            border-color: #166534;
         }
 
         #add-files-btn:hover {
-            background-color: #4cae4c;
+            background: linear-gradient(to bottom, #22c55e, #16a34a);
+            border-color: #16a34a;
+        }
+
+        #add-slot-btn {
+            background: linear-gradient(to bottom, #6a1bb2, #4a1580);
+            border-color: #8a2be2;
+        }
+
+        #add-slot-btn:hover {
+            background: linear-gradient(to bottom, #7a2bc2, #5a1d90);
+            border-color: #a855f7;
+        }
+
+        #toggle-controls-wrapper {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 200;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #toggle-controls-wrapper:hover {
+            opacity: 1;
+        }
+
+        #toggle-controls-btn {
+            background: linear-gradient(to bottom, #6a1bb2, #4a1580);
+            border: 1px solid #8a2be2;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 8px 14px;
+            border-radius: 6px;
+            color: #eee;
+            font-size: 0.9em;
+            min-width: 110px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(138, 43, 226, 0.3);
+        }
+
+        #toggle-controls-btn:hover {
+            background: linear-gradient(to bottom, #7a2bc2, #5a1d90);
+            border-color: #a855f7;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 6px rgba(138, 43, 226, 0.5);
+        }
+
+        #toggle-controls-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(138, 43, 226, 0.3);
+        }
+
+        #controls.controls-hidden {
+            display: none;
         }
 
         .action-buttons-group {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             gap: 10px;
-            align-items: stretch;
+            align-items: center;
+            flex-shrink: 0;
+            flex-wrap: nowrap;
+            align-self: center;
+        }
+
+        .action-buttons-group button {
+            white-space: nowrap;
+        }
+
+        .separator {
+            flex-shrink: 0;
+            align-self: stretch;
         }
 
         #hidden-file-input {
@@ -183,7 +348,7 @@
             overflow: hidden;
             cursor: grab;
             margin-top: 15px;
-            background-color: #252525;
+            background: radial-gradient(circle at center, #2d1b4e 0%, #1a0a2e 100%);
             width: 100%;
             height: 100%;
         }
@@ -193,7 +358,7 @@
         }
 
         #main-view-area.drag-over {
-            border-color: #007bff;
+            border-color: #8a2be2;
         }
 
         #drop-info-wrapper {
@@ -224,12 +389,12 @@
 
         #drop-info-icon {
             font-size: 3.5rem;
-            color: #6c757d;
+            color: #8a2be2;
             margin-bottom: 15px;
         }
 
         #drop-info-text {
-            color: #6c757d;
+            color: #a855f7;
             font-size: 1.2rem;
             font-weight: 500;
             text-align: center;
@@ -263,6 +428,25 @@
         .img-slot-container img {
             position: absolute;
             display: block;
+        }
+
+        #manual-slider-handle {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 100%;
+            background: linear-gradient(to right,
+                    transparent,
+                    rgba(138, 43, 226, 0.6) 40%,
+                    rgba(138, 43, 226, 0.9) 50%,
+                    rgba(138, 43, 226, 0.6) 60%,
+                    transparent);
+            cursor: ew-resize;
+            z-index: 100;
+            pointer-events: auto;
+            box-shadow: 0 0 4px rgba(138, 43, 226, 0.4);
         }
 
         #slot0-container {
@@ -305,18 +489,40 @@
 
 <body>
     <div id="controls">
+        <div class="control-section" id="image-slots-controls">
+            <!-- Image slot selectors will be dynamically generated here -->
+        </div>
+        <div class="separator"></div>
         <div class="control-section">
             <div class="control-group">
-                <label for="slot0-select">Base Slot:</label>
-                <select id="slot0-select"></select>
+                <label for="comparison-mode-select">Comparison Mode:</label>
+                <select id="comparison-mode-select">
+                    <option value="swipe" selected>Swipe</option>
+                    <option value="fade">Fade</option>
+                    <option value="onion-skin">Onion Skin</option>
+                    <option value="manual-slider">Manual Slider</option>
+                </select>
             </div>
-            <div class="control-group">
-                <label for="slot1-select">Comparison Slot 1:</label>
-                <select id="slot1-select"></select>
+            <div id="swipe-controls" class="control-group">
+                <label for="swipe-direction">Swipe Direction:</label>
+                <select id="swipe-direction">
+                    <option value="horizontal" selected>Horizontal</option>
+                    <option value="vertical">Vertical</option>
+                </select>
             </div>
-            <div class="control-group">
-                <label for="slot2-select">Comparison Slot 2:</label>
-                <select id="slot2-select"></select>
+            <div id="onion-skin-controls" class="control-group hidden">
+                <label for="opacity-slider">Opacity:</label>
+                <div class="control-row">
+                    <input type="range" id="opacity-slider" min="0" max="1" step="0.01" value="0.5">
+                    <span id="opacity-value">50%</span>
+                </div>
+            </div>
+            <div id="manual-slider-controls" class="control-group hidden">
+                <label for="manual-slider-direction">Slider Direction:</label>
+                <select id="manual-slider-direction">
+                    <option value="horizontal" selected>Horizontal</option>
+                    <option value="vertical">Vertical</option>
+                </select>
             </div>
         </div>
         <div class="separator"></div>
@@ -362,24 +568,20 @@
         </div>
         <div class="separator"></div>
         <div class="control-section action-buttons-group">
+            <button id="add-slot-btn">+ Add Slot</button>
             <button id="add-files-btn">Add Files</button>
             <input type="file" id="hidden-file-input" multiple accept="image/*">
             <button id="reset-view-btn">Reset</button>
         </div>
     </div>
     <div id="app-container">
+        <div id="toggle-controls-wrapper">
+            <button id="toggle-controls-btn">Hide</button>
+        </div>
         <div id="main-view-area" class="no-images-loaded">
             <div class="image-stack hidden">
-                <div id="slot0-container" class="img-slot-container hidden"><img id="slot0-img" alt="Base Slot Image">
-                </div>
-                <div id="slot1-clipper" class="hidden">
-                    <div id="slot1-container" class="img-slot-container hidden"><img id="slot1-img"
-                            alt="Comparison Slot 1 Image"></div>
-                </div>
-                <div id="slot2-clipper" class="hidden">
-                    <div id="slot2-container" class="img-slot-container hidden"><img id="slot2-img"
-                            alt="Comparison Slot 2 Image"></div>
-                </div>
+                <!-- Image slots will be dynamically generated here -->
+                <div id="manual-slider-handle" class="hidden"></div>
             </div>
             <div id="drop-info-wrapper">
                 <div id="drop-info-icon">📤</div>
@@ -394,26 +596,8 @@
         document.addEventListener('DOMContentLoaded', () => {
             // DOM Elements
             const imageStack = document.querySelector('.image-stack');
-            const slotContainers = [
-                document.getElementById('slot0-container'),
-                document.getElementById('slot1-container'),
-                document.getElementById('slot2-container')
-            ];
-            const slotImages = [
-                document.getElementById('slot0-img'),
-                document.getElementById('slot1-img'),
-                document.getElementById('slot2-img')
-            ];
-            const slotClippers = [
-                null,
-                document.getElementById('slot1-clipper'),
-                document.getElementById('slot2-clipper')
-            ];
-            const slotSelects = [
-                document.getElementById('slot0-select'),
-                document.getElementById('slot1-select'),
-                document.getElementById('slot2-select')
-            ];
+            const imageSlotsControls = document.getElementById('image-slots-controls');
+            const comparisonModeSelect = document.getElementById('comparison-mode-select');
             const mainViewArea = document.getElementById('main-view-area');
             const speedSlider = document.getElementById('speed-slider');
             const speedValueSpan = document.getElementById('speed-value');
@@ -423,122 +607,275 @@
             const zoomValueSpan = document.getElementById('zoom-value');
             const resetViewBtn = document.getElementById('reset-view-btn');
             const addFilesBtn = document.getElementById('add-files-btn');
+            const addSlotBtn = document.getElementById('add-slot-btn');
             const hiddenFileInput = document.getElementById('hidden-file-input');
             const viewportWidthSlider = document.getElementById('viewport-width-slider');
             const viewportWidthValueSpan = document.getElementById('viewport-width-value');
             const viewportHeightSlider = document.getElementById('viewport-height-slider');
             const viewportHeightValueSpan = document.getElementById('viewport-height-value');
+            const toggleControlsBtn = document.getElementById('toggle-controls-btn');
+            const controlsPanel = document.getElementById('controls');
+
+            // New mode controls
+            const swipeControls = document.getElementById('swipe-controls');
+            const swipeDirection = document.getElementById('swipe-direction');
+            const onionSkinControls = document.getElementById('onion-skin-controls');
+            const opacitySlider = document.getElementById('opacity-slider');
+            const opacityValue = document.getElementById('opacity-value');
+            const manualSliderControls = document.getElementById('manual-slider-controls');
+            const manualSliderDirection = document.getElementById('manual-slider-direction');
+            const manualSliderHandle = document.getElementById('manual-slider-handle');
+
 
             // State
+            let activeSlotData = [];
+            let comparisonMode = 'swipe';
+            let currentSwipeDirection = 'horizontal';
             let currentSpeed = parseFloat(speedSlider.value);
             let currentDelay = parseFloat(delaySlider.value);
-            let currentZoom = parseFloat(zoomSlider.value);
-            let currentViewportWidthPercent = parseFloat(viewportWidthSlider.value);
-            let currentViewportHeightPercent = parseFloat(viewportHeightSlider.value);
+            let currentZoom = 1.0;
 
             let panX = 0, panY = 0;
             let isPanning = false;
             let lastPanX_mouse, lastPanY_mouse;
             let canvasWidth = 0, canvasHeight = 0;
             let viewportWidth = 0, viewportHeight = 0;
-            let lineAnimationCursor = 0, lineAnimationDirection = 1;
             let animationFrameId = null;
             let pendingViewUpdate = false;
             let firstLoadDone = false;
-
-            let activeSlotData = Array(MAX_COMPARISON_SLOTS).fill(null).map(() => ({
-                src: null,
-                imgObject: new Image(),
-                naturalWidth: 0,
-                naturalHeight: 0,
-                isLoaded: false,
-                isLoading: false
-            }));
+            let isDraggingManualSlider = false;
+            let animationCursor = 0;
+            let animationDirection = 1;
 
             // --- UI Control Updates ---
             function updateControlSpans() {
                 speedValueSpan.textContent = currentSpeed.toFixed(2) + 'x';
                 delayValueSpan.textContent = currentDelay + '%';
                 zoomValueSpan.textContent = currentZoom.toFixed(1) + 'x';
-                viewportWidthValueSpan.textContent = currentViewportWidthPercent + '%';
-                viewportHeightValueSpan.textContent = currentViewportHeightPercent + '%';
+                opacityValue.textContent = `${Math.round(opacitySlider.value * 100)}%`;
+                viewportWidthValueSpan.textContent = `${viewportWidthSlider.value}%`;
+                viewportHeightValueSpan.textContent = `${viewportHeightSlider.value}%`;
             }
-            updateControlSpans();
+
+            // --- Slot Management ---
+            function addNewSlot(isBaseSlot = false) {
+                const slotIndex = activeSlotData.length;
+                const isComparisonSlot = !isBaseSlot;
+
+                const controlGroup = document.createElement('div');
+                controlGroup.className = 'control-group';
+
+                const label = document.createElement('label');
+                label.htmlFor = `slot${slotIndex}-select`;
+                label.textContent = isBaseSlot ? 'Base Slot:' : `Comparison Slot ${slotIndex}:`;
+
+                const select = document.createElement('select');
+                select.id = `slot${slotIndex}-select`;
+                select.addEventListener('change', (e) => handleSlotSelectionChange(e, slotIndex));
+
+                controlGroup.appendChild(label);
+                controlGroup.appendChild(select);
+                imageSlotsControls.appendChild(controlGroup);
+
+                const slotContainer = document.createElement('div');
+                slotContainer.id = `slot${slotIndex}-container`;
+                slotContainer.className = 'img-slot-container hidden';
+
+                const img = document.createElement('img');
+                img.id = `slot${slotIndex}-img`;
+                img.alt = `${isBaseSlot ? 'Base' : 'Comparison'} Slot ${slotIndex} Image`;
+                slotContainer.appendChild(img);
+
+                let clipper = null;
+                if (isComparisonSlot) {
+                    clipper = document.createElement('div');
+                    clipper.id = `slot${slotIndex}-clipper`;
+                    clipper.className = 'hidden';
+                    clipper.style.position = 'absolute';
+                    clipper.style.top = '0';
+                    clipper.style.left = '0';
+                    clipper.style.height = '100%';
+                    clipper.style.overflow = 'hidden';
+                    clipper.style.backgroundColor = 'transparent';
+                    clipper.style.zIndex = slotIndex + 1;
+                    clipper.appendChild(slotContainer);
+                    imageStack.appendChild(clipper);
+                } else {
+                    slotContainer.style.zIndex = 1;
+                    imageStack.appendChild(slotContainer);
+                }
+
+                const newSlot = {
+                    src: null, imgObject: new Image(), naturalWidth: 0, naturalHeight: 0, isLoaded: false, isLoading: false,
+                    controlGroup, select, container: slotContainer, image: img, clipper
+                };
+
+                newSlot.imgObject.onload = () => imageLoadedOrFailed(slotIndex, true);
+                newSlot.imgObject.onerror = () => imageLoadedOrFailed(slotIndex, false);
+
+                activeSlotData.push(newSlot);
+                populateSelectOptions();
+            }
+
+            // --- Zoom Logic ---
+            function getZoomFromSlider(value) {
+                const sliderValue = parseFloat(value);
+                if (sliderValue < 50) {
+                    return Math.pow(10, (sliderValue / 50.0) - 1); // Maps 0->0.1, 50->1
+                } else {
+                    return 1 + ((sliderValue - 50) / 50.0) * 19; // Maps 50->1, 100->20
+                }
+            }
+
+            function getSliderFromZoom(zoomValue) {
+                if (zoomValue < 1) {
+                    return 50 * (Math.log10(zoomValue) + 1);
+                } else {
+                    return 50 + ((zoomValue - 1) / 19.0) * 50;
+                }
+            }
+
 
             // --- Event Listeners for Controls ---
-            speedSlider.addEventListener('input', (e) => {
-                currentSpeed = parseFloat(e.target.value);
+            speedSlider.addEventListener('input', (e) => { currentSpeed = parseFloat(e.target.value); updateControlSpans(); });
+            delaySlider.addEventListener('input', (e) => { currentDelay = parseFloat(e.target.value); updateControlSpans(); });
+
+            comparisonModeSelect.addEventListener('change', (e) => {
+                comparisonMode = e.target.value;
+                swipeControls.classList.toggle('hidden', comparisonMode !== 'swipe');
+                onionSkinControls.classList.toggle('hidden', comparisonMode !== 'onion-skin');
+                manualSliderControls.classList.toggle('hidden', comparisonMode !== 'manual-slider');
+                requestAnimationFrame(processLoadedImagesAndUpdateView);
+            });
+
+            swipeDirection.addEventListener('change', (e) => {
+                currentSwipeDirection = e.target.value;
+                requestAnimationFrame(processLoadedImagesAndUpdateView);
+            });
+
+            opacitySlider.addEventListener('input', (e) => {
+                if (comparisonMode === 'onion-skin' && activeSlotData[1] && activeSlotData[1].isLoaded) {
+                    activeSlotData[1].container.style.opacity = e.target.value;
+                }
                 updateControlSpans();
             });
 
-            delaySlider.addEventListener('input', (e) => {
-                currentDelay = parseFloat(e.target.value);
-                updateControlSpans();
+            manualSliderDirection.addEventListener('change', () => {
+                requestAnimationFrame(processLoadedImagesAndUpdateView);
             });
+
+
+            addSlotBtn.addEventListener('click', () => addNewSlot(false));
 
             zoomSlider.addEventListener('input', (e) => {
                 const oldZoom = currentZoom;
-                const oldScaledCanvasHeight = canvasHeight * oldZoom;
-                currentZoom = parseFloat(e.target.value);
+                currentZoom = getZoomFromSlider(e.target.value);
                 updateControlSpans();
+
                 if (!viewportWidth) return;
-                const centerX = viewportWidth / 2;
-                const centerY = viewportHeight / 2;
-                panX = centerX - (centerX - panX) * (currentZoom / oldZoom);
-                const newScaledCanvasHeight = canvasHeight * currentZoom;
-                if (oldScaledCanvasHeight >= viewportHeight && newScaledCanvasHeight < viewportHeight) {
-                    panY = (viewportHeight - newScaledCanvasHeight) / 2;
-                } else if (newScaledCanvasHeight >= viewportHeight) {
-                    panY = centerY - (centerY - panY) * (currentZoom / oldZoom);
+                const rect = mainViewArea.getBoundingClientRect();
+                const mouseXInViewport = (rect.width / 2);
+                const mouseYInViewport = (rect.height / 2);
+
+                panX = mouseXInViewport - (mouseXInViewport - panX) * (currentZoom / oldZoom);
+                if (canvasHeight * currentZoom >= viewportHeight) {
+                    panY = mouseYInViewport - (mouseYInViewport - panY) * (currentZoom / oldZoom);
                 } else {
-                    panY = (viewportHeight - newScaledCanvasHeight) / 2;
+                    panY = (viewportHeight - canvasHeight * currentZoom) / 2;
                 }
                 applyTransformations();
             });
 
-            viewportWidthSlider.addEventListener('input', (e) => {
-                const oldVWidth = viewportWidth;
-                currentViewportWidthPercent = parseFloat(e.target.value);
-                mainViewArea.style.width = currentViewportWidthPercent + '%';
+            const createViewportSliderHandler = (isWidth) => (e) => {
+                const oldDim = isWidth ? viewportWidth : viewportHeight;
+                if (isWidth) {
+                    mainViewArea.style.width = e.target.value + '%';
+                } else {
+                    mainViewArea.style.height = e.target.value + '%';
+                }
                 updateControlSpans();
                 requestAnimationFrame(() => {
                     updateMainViewAreaDimensions();
-                    panX += (viewportWidth - oldVWidth) / 2;
+                    const newDim = isWidth ? viewportWidth : viewportHeight;
+                    if (isWidth) panX += (newDim - oldDim) / 2;
+                    else panY += (newDim - oldDim) / 2;
                     applyTransformations();
                 });
-            });
+            };
 
-            viewportHeightSlider.addEventListener('input', (e) => {
-                const oldVHeight = viewportHeight;
-                currentViewportHeightPercent = parseFloat(e.target.value);
-                mainViewArea.style.height = currentViewportHeightPercent + '%';
-                updateControlSpans();
-                requestAnimationFrame(() => {
-                    updateMainViewAreaDimensions();
-                    panY += (viewportHeight - oldVHeight) / 2;
-                    applyTransformations();
-                });
-            });
+            viewportWidthSlider.addEventListener('input', createViewportSliderHandler(true));
+            viewportHeightSlider.addEventListener('input', createViewportSliderHandler(false));
+
 
             resetViewBtn.addEventListener('click', resetApp);
             addFilesBtn.addEventListener('click', () => hiddenFileInput.click());
+            addSlotBtn.addEventListener('click', () => addNewSlot(false));
             hiddenFileInput.addEventListener('change', handleFileSelectionFromInput);
 
+            toggleControlsBtn.addEventListener('click', () => {
+                const isHidden = controlsPanel.classList.toggle('controls-hidden');
+                toggleControlsBtn.textContent = isHidden ? 'Show' : 'Hide';
+                requestAnimationFrame(() => {
+                    updateMainViewAreaDimensions();
+                    applyTransformations();
+                });
+            });
+
             // --- Image Selection and Loading ---
+            function naturalSort(a, b) {
+                // Rozdziel nazwę pliku na nazwę i rozszerzenie
+                const getNameAndExt = (filename) => {
+                    const lastDot = filename.lastIndexOf('.');
+                    if (lastDot === -1) return { name: filename, ext: '' };
+                    return {
+                        name: filename.substring(0, lastDot),
+                        ext: filename.substring(lastDot)
+                    };
+                };
+
+                const aFile = getNameAndExt(a);
+                const bFile = getNameAndExt(b);
+
+                // Sortuj po nazwie (bez rozszerzenia) alfanumerycznie
+                const regex = /(\d+)|(\D+)/g;
+                const aParts = aFile.name.match(regex) || [];
+                const bParts = bFile.name.match(regex) || [];
+
+                for (let i = 0; i < Math.min(aParts.length, bParts.length); i++) {
+                    const aPart = aParts[i];
+                    const bPart = bParts[i];
+
+                    const aNum = parseInt(aPart, 10);
+                    const bNum = parseInt(bPart, 10);
+
+                    if (!isNaN(aNum) && !isNaN(bNum)) {
+                        if (aNum !== bNum) return aNum - bNum;
+                    } else {
+                        if (aPart !== bPart) return aPart.localeCompare(bPart);
+                    }
+                }
+
+                // Jeśli nazwy są takie same, porównaj długość części nazwy
+                if (aParts.length !== bParts.length) {
+                    return aParts.length - bParts.length;
+                }
+
+                // Jeśli nazwy identyczne, sortuj po rozszerzeniu
+                return aFile.ext.localeCompare(bFile.ext);
+            }
+
             function populateSelectOptions() {
                 const emptyOptionHTML = `<option value="">-- Select Image --</option>`;
-                slotSelects.forEach(select => {
-                    const currentSelectedValue = select.value;
+                const sortedImages = [...DYNAMIC_AVAILABLE_IMAGES].sort((a, b) => naturalSort(a.name, b.name));
+
+                activeSlotData.forEach(slot => {
+                    const currentSelectedValue = slot.select.value;
                     let optionsHTML = emptyOptionHTML;
-                    DYNAMIC_AVAILABLE_IMAGES.forEach((imgData) => {
+                    sortedImages.forEach((imgData) => {
                         optionsHTML += `<option value="${imgData.src}" ${imgData.src === currentSelectedValue ? 'selected' : ''}>${imgData.name}</option>`;
                     });
-                    select.innerHTML = optionsHTML;
-                    if (DYNAMIC_AVAILABLE_IMAGES.some(img => img.src === currentSelectedValue)) {
-                        select.value = currentSelectedValue;
-                    } else {
-                        select.value = "";
-                    }
+                    slot.select.innerHTML = optionsHTML;
+                    slot.select.value = DYNAMIC_AVAILABLE_IMAGES.some(img => img.src === currentSelectedValue) ? currentSelectedValue : "";
                 });
             }
 
@@ -551,29 +888,14 @@
                 return false;
             }
 
-            slotSelects.forEach(select =>
-                select.addEventListener('change', handleSlotSelectionChange)
-            );
-
-            activeSlotData.forEach((slotData, index) => {
-                slotData.imgObject.onload = () => imageLoadedOrFailed(index, true);
-                slotData.imgObject.onerror = () => imageLoadedOrFailed(index, false);
-            });
-
-            function handleSlotSelectionChange(event) {
-                const slotIndex = slotSelects.indexOf(event.target);
+            function handleSlotSelectionChange(event, slotIndex) {
                 const selectedSrc = event.target.value;
                 const currentSlot = activeSlotData[slotIndex];
 
-                if (currentSlot.isLoading) {
-                    currentSlot.isLoading = false;
-                }
-                currentSlot.src = selectedSrc || null;
-                currentSlot.isLoaded = false;
-                currentSlot.naturalWidth = 0;
-                currentSlot.naturalHeight = 0;
-                slotContainers[slotIndex].classList.add('hidden');
-                slotImages[slotIndex].src = "";
+                if (currentSlot.isLoading) currentSlot.isLoading = false;
+                Object.assign(currentSlot, { src: selectedSrc || null, isLoaded: false, naturalWidth: 0, naturalHeight: 0 });
+                currentSlot.container.classList.add('hidden');
+                currentSlot.image.src = "";
 
                 if (currentSlot.src) {
                     currentSlot.isLoading = true;
@@ -586,19 +908,14 @@
 
             function imageLoadedOrFailed(slotIndex, success) {
                 const slot = activeSlotData[slotIndex];
-                if (!slot.isLoading && slot.src) {
-                    return;
-                }
+                if (!slot.isLoading && slot.src) return;
                 slot.isLoading = false;
                 if (success) {
-                    slot.naturalWidth = slot.imgObject.naturalWidth;
-                    slot.naturalHeight = slot.imgObject.naturalHeight;
-                    slot.isLoaded = true;
+                    Object.assign(slot, { naturalWidth: slot.imgObject.naturalWidth, naturalHeight: slot.imgObject.naturalHeight, isLoaded: true });
                 } else {
                     console.error(`Error loading: ${slot.src}`);
-                    slot.isLoaded = false;
-                    slot.src = null;
-                    slotSelects[slotIndex].value = "";
+                    Object.assign(slot, { isLoaded: false, src: null });
+                    slot.select.value = "";
                 }
                 requestViewUpdate();
             }
@@ -617,105 +934,95 @@
             function processLoadedImagesAndUpdateView() {
                 if (animationFrameId) cancelAnimationFrame(animationFrameId);
                 animationFrameId = null;
+                manualSliderHandle.classList.add('hidden');
 
                 const activeImagesForCanvas = activeSlotData.filter(d => d.isLoaded && d.src);
 
+                updateModeAvailability(activeImagesForCanvas.length);
+
+
                 if (activeImagesForCanvas.length === 0) {
-                    canvasWidth = 0;
-                    canvasHeight = 0;
-                    firstLoadDone = false;
+                    canvasWidth = 0; canvasHeight = 0; firstLoadDone = false;
                 } else {
                     if (!setupCanvasAndImages(activeImagesForCanvas)) {
-                        canvasWidth = 0;
-                        canvasHeight = 0;
-                        applyTransformations();
-                        return;
+                        canvasWidth = 0; canvasHeight = 0;
+                        applyTransformations(); return;
                     }
                 }
 
                 updateMainViewAreaDimensions();
 
                 if (!firstLoadDone && activeImagesForCanvas.length > 0) {
-                    resetPanAndZoom();
-                    firstLoadDone = true;
+                    resetPanAndZoom(); firstLoadDone = true;
                 } else if (activeImagesForCanvas.length === 0) {
                     resetPanAndZoom(false);
                 }
-
                 applyTransformations();
 
-                activeSlotData.forEach((data, index) => {
+                activeSlotData.forEach((data) => {
+                    // Reset styles before applying mode-specific ones
+                    if (data.clipper) {
+                        data.clipper.style.width = '100%';
+                        data.clipper.style.height = '100%';
+                        data.container.style.opacity = '1';
+                    }
+
                     if (data.isLoaded && data.src) {
-                        slotImages[index].src = data.src;
-                        slotContainers[index].classList.remove('hidden');
+                        data.image.src = data.src;
+                        data.container.classList.remove('hidden');
+                        if (data.clipper) data.clipper.classList.remove('hidden');
                     } else {
-                        slotContainers[index].classList.add('hidden');
+                        data.container.classList.add('hidden');
+                        if (data.clipper) data.clipper.classList.add('hidden');
                     }
                 });
 
-                slotClippers.forEach(clipper => clipper && clipper.classList.add('hidden'));
+                const loadedComparisonSlots = activeSlotData.slice(1).filter(d => d.isLoaded && d.src);
+                if (activeSlotData[0]?.isLoaded && loadedComparisonSlots.length > 0) {
+                    if (comparisonMode.startsWith('swipe') || comparisonMode === 'fade') {
+                        animate();
+                    } else if (comparisonMode === 'onion-skin') {
+                        activeSlotData[1].container.style.opacity = opacitySlider.value;
+                    } else if (comparisonMode === 'manual-slider') {
+                        setupManualSlider();
+                    }
+                }
+            }
 
-                const isSlot0Active = activeSlotData[0]?.isLoaded && activeSlotData[0]?.src;
-                const isSlot1Active = activeSlotData[1]?.isLoaded && activeSlotData[1]?.src;
-                const isSlot2Active = activeSlotData[2]?.isLoaded && activeSlotData[2]?.src;
+            function updateModeAvailability(activeImageCount) {
+                const twoImageModes = ['onion-skin', 'manual-slider'];
+                const options = comparisonModeSelect.options;
 
-                let comparingTwo = false;
-                let comparingThree = false;
-
-                if (isSlot0Active && isSlot1Active) {
-                    if (slotClippers[1]) slotClippers[1].classList.remove('hidden');
-                    comparingTwo = true;
-                    if (isSlot2Active) {
-                        if (slotClippers[2]) slotClippers[2].classList.remove('hidden');
-                        comparingThree = true;
+                for (let i = 0; i < options.length; i++) {
+                    if (twoImageModes.includes(options[i].value)) {
+                        options[i].disabled = activeImageCount > 2;
                     }
                 }
 
-                if (comparingTwo) {
-                    const { visibleStartPercent, visibleEndPercent } = getVisibleImageRangePercents();
-                    lineAnimationCursor = visibleStartPercent;
-                    lineAnimationDirection = 1;
-
-                    if (slotClippers[1] && !slotClippers[1].classList.contains('hidden')) {
-                        slotClippers[1].style.width = `${Math.max(visibleStartPercent, Math.min(visibleEndPercent, lineAnimationCursor))}%`;
-                    }
-                    if (comparingThree && slotClippers[2] && !slotClippers[2].classList.contains('hidden')) {
-                        slotClippers[2].style.width = `${Math.max(visibleStartPercent, Math.min(visibleEndPercent, lineAnimationCursor - currentDelay))}%`;
-                    } else if (slotClippers[2]) {
-                        slotClippers[2].style.width = '0%';
-                    }
-                    animateLines();
-                } else {
-                    if (slotClippers[1]) slotClippers[1].style.width = '0%';
-                    if (slotClippers[2]) slotClippers[2].style.width = '0%';
+                if (activeImageCount > 2 && twoImageModes.includes(comparisonMode)) {
+                    comparisonModeSelect.value = 'swipe';
+                    comparisonMode = 'swipe';
+                    swipeControls.classList.remove('hidden');
+                    onionSkinControls.classList.add('hidden');
+                    manualSliderControls.classList.add('hidden');
                 }
             }
 
             function setupCanvasAndImages(activeImagesData) {
                 let maxW = 0, maxH = 0;
-                if (activeImagesData.length === 0) {
-                    canvasWidth = 0;
-                    canvasHeight = 0;
-                    return true;
-                }
                 activeImagesData.forEach(data => {
                     maxW = Math.max(maxW, data.naturalWidth);
                     maxH = Math.max(maxH, data.naturalHeight);
                 });
-                if (maxW === 0 || maxH === 0) {
-                    return false;
-                }
-                canvasWidth = maxW;
-                canvasHeight = maxH;
+                if (maxW === 0 || maxH === 0) return false;
+
+                canvasWidth = maxW; canvasHeight = maxH;
                 imageStack.style.width = `${canvasWidth}px`;
                 imageStack.style.height = `${canvasHeight}px`;
-                activeSlotData.forEach((data, slotIndex) => {
-                    const imgEl = slotImages[slotIndex];
+
+                activeSlotData.forEach(data => {
                     if (data.isLoaded && data.src) {
-                        imgEl.style.width = `${canvasWidth}px`;
-                        imgEl.style.height = `${canvasHeight}px`;
-                        imgEl.style.left = `0px`;
-                        imgEl.style.top = `0px`;
+                        Object.assign(data.image.style, { width: `${canvasWidth}px`, height: `${canvasHeight}px`, left: '0px', top: '0px' });
                     }
                 });
                 return true;
@@ -740,103 +1047,100 @@
                 const scaledCanvasWidth = canvasWidth * currentZoom;
                 const scaledCanvasHeight = canvasHeight * currentZoom;
 
-                let minPanX = viewportWidth - scaledCanvasWidth;
-                let maxPanX = 0;
-                let minPanY = viewportHeight - scaledCanvasHeight;
-                let maxPanY = 0;
-
-                if (scaledCanvasWidth < viewportWidth) {
-                    minPanX = maxPanX = (viewportWidth - scaledCanvasWidth) / 2;
-                }
+                let minPanX = (scaledCanvasWidth < viewportWidth) ? (viewportWidth - scaledCanvasWidth) / 2 : viewportWidth - scaledCanvasWidth;
+                let maxPanX = (scaledCanvasWidth < viewportWidth) ? (viewportWidth - scaledCanvasWidth) / 2 : 0;
                 panX = Math.max(minPanX, Math.min(maxPanX, panX));
 
-                if (scaledCanvasHeight < viewportHeight) {
-                    panY = (viewportHeight - scaledCanvasHeight) / 2;
-                } else {
-                    panY = Math.max(minPanY, Math.min(maxPanY, panY));
-                }
+                let minPanY = (scaledCanvasHeight < viewportHeight) ? (viewportHeight - scaledCanvasHeight) / 2 : viewportHeight - scaledCanvasHeight;
+                let maxPanY = (scaledCanvasHeight < viewportHeight) ? (viewportHeight - scaledCanvasHeight) / 2 : 0;
+                panY = Math.max(minPanY, Math.min(maxPanY, panY));
+
 
                 imageStack.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
+
+                if (comparisonMode === 'manual-slider') {
+                    setupManualSlider();
+                }
             }
 
             function resetPanAndZoom(resetSliders = true) {
-                currentZoom = 1.0;
-                if (resetSliders) zoomSlider.value = currentZoom;
-                panX = 0;
-                panY = 0;
+                if (resetSliders) {
+                    currentZoom = 1.0;
+                    zoomSlider.value = getSliderFromZoom(1.0);
+                }
+                panX = 0; panY = 0;
                 if (viewportWidth > 0 && viewportHeight > 0) {
                     if (canvasWidth > 0 && canvasHeight > 0) {
-                        if (canvasWidth * currentZoom < viewportWidth)
-                            panX = (viewportWidth - canvasWidth * currentZoom) / 2;
-                        if (canvasHeight * currentZoom < viewportHeight)
-                            panY = (viewportHeight - canvasHeight * currentZoom) / 2;
-                    } else {
-                        panX = (viewportWidth) / 2;
-                        panY = (viewportHeight) / 2;
+                        if (canvasWidth * currentZoom < viewportWidth) panX = (viewportWidth - canvasWidth * currentZoom) / 2;
+                        if (canvasHeight * currentZoom < viewportHeight) panY = (viewportHeight - canvasHeight * currentZoom) / 2;
                     }
                 }
                 if (resetSliders) updateControlSpans();
             }
 
             function resetApp() {
-                slotSelects.forEach(select => select.value = "");
-                activeSlotData.forEach((slot, index) => {
-                    slot.src = null;
-                    slot.isLoaded = false;
-                    slot.isLoading = false;
-                    slot.naturalWidth = 0;
-                    slot.naturalHeight = 0;
-                    slotContainers[index].classList.add('hidden');
-                    slotImages[index].src = "";
-                });
                 if (animationFrameId) cancelAnimationFrame(animationFrameId);
                 animationFrameId = null;
-                currentViewportWidthPercent = 100;
-                viewportWidthSlider.value = 100;
-                mainViewArea.style.width = '100%';
-                currentViewportHeightPercent = 100;
-                viewportHeightSlider.value = 100;
-                mainViewArea.style.height = '100%';
-                speedSlider.value = 0.25;
+
+                // Clear all children except the handle
+                while (imageStack.firstChild && imageStack.firstChild !== manualSliderHandle) {
+                    imageStack.removeChild(imageStack.firstChild);
+                }
+                while (imageStack.lastChild && imageStack.lastChild !== manualSliderHandle) {
+                    imageStack.removeChild(imageStack.lastChild);
+                }
+
+                imageSlotsControls.innerHTML = '';
+                activeSlotData = [];
+
+                comparisonModeSelect.value = 'swipe';
+                comparisonMode = 'swipe';
+                currentSwipeDirection = 'horizontal';
+                swipeDirection.value = 'horizontal';
+                swipeControls.classList.remove('hidden');
+                onionSkinControls.classList.add('hidden');
+                manualSliderControls.classList.add('hidden');
+                opacitySlider.value = 0.5;
+
                 currentSpeed = parseFloat(speedSlider.value);
-                delaySlider.value = 10;
                 currentDelay = parseFloat(delaySlider.value);
                 firstLoadDone = false;
                 resetPanAndZoom(true);
-                processLoadedImagesAndUpdateView();
                 updateControlSpans();
+
+                addNewSlot(true); // Base Slot
+                addNewSlot(false); // First Comparison Slot
+
+                processDroppedOrSelectedFiles([]); // Clear selections
+                requestViewUpdate();
             }
 
             // --- File Handling ---
             function processDroppedOrSelectedFiles(files) {
-                if (files.length > 0) {
-                    let filesToProcess = Array.from(files).filter(f => f.type.startsWith('image/'));
-                    if (filesToProcess.length === 0) return;
-                    let firstNewImageSrcForAutoSelect = null;
-                    let processedCount = 0;
-                    filesToProcess.forEach(file => {
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                            const dataURL = event.target.result;
-                            const added = addImageToAvailableList(file.name, dataURL);
-                            if (added && !firstNewImageSrcForAutoSelect)
-                                firstNewImageSrcForAutoSelect = dataURL;
-                            processedCount++;
-                            if (processedCount === filesToProcess.length && firstNewImageSrcForAutoSelect) {
-                                const emptySlotIndex = activeSlotData.findIndex(slot => !slot.src);
-                                if (emptySlotIndex !== -1) {
-                                    slotSelects[emptySlotIndex].value = firstNewImageSrcForAutoSelect;
-                                    slotSelects[emptySlotIndex].dispatchEvent(new Event('change'));
-                                }
+                if (files.length === 0) return;
+                let filesToProcess = Array.from(files).filter(f => f.type.startsWith('image/'));
+                if (filesToProcess.length === 0) return;
+
+                let firstNewImageSrcForAutoSelect = null;
+                let processedCount = 0;
+                filesToProcess.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const dataURL = event.target.result;
+                        const added = addImageToAvailableList(file.name, dataURL);
+                        if (added && !firstNewImageSrcForAutoSelect) firstNewImageSrcForAutoSelect = dataURL;
+                        processedCount++;
+                        if (processedCount === filesToProcess.length && firstNewImageSrcForAutoSelect) {
+                            const emptySlot = activeSlotData.find(slot => !slot.src);
+                            if (emptySlot) {
+                                emptySlot.select.value = firstNewImageSrcForAutoSelect;
+                                emptySlot.select.dispatchEvent(new Event('change'));
                             }
-                        };
-                        reader.onerror = (error) => {
-                            console.error("File read error:", file.name, error);
-                            processedCount++;
-                        };
-                        reader.readAsDataURL(file);
-                    });
-                }
+                        }
+                    };
+                    reader.onerror = (error) => { console.error("File read error:", file.name, error); processedCount++; };
+                    reader.readAsDataURL(file);
+                });
             }
 
             function handleFileSelectionFromInput(event) {
@@ -920,7 +1224,14 @@
             }
 
             // --- Mouse & Wheel Events for Panning/Zooming ---
+            manualSliderHandle.addEventListener('mousedown', (e) => {
+                e.preventDefault(); // Prevent text selection/drag-and-drop
+                isDraggingManualSlider = true;
+            });
+            manualSliderHandle.addEventListener('dragstart', (e) => e.preventDefault());
+
             mainViewArea.addEventListener('mousedown', (e) => {
+                if (e.target === manualSliderHandle || e.target.parentElement === manualSliderHandle) return;
                 if (e.button !== 0) return;
                 isPanning = true;
                 lastPanX_mouse = e.clientX;
@@ -983,8 +1294,237 @@
                 applyTransformations();
             });
 
+            // --- Viewport Calculations ---
+            function getVisibleImageRangePercents() {
+                if (!canvasWidth || !viewportWidth || currentZoom === 0) return { visibleStartPercent: 0, visibleEndPercent: 100, visibleTopPercent: 0, visibleBottomPercent: 100 };
+                const imgCoordAtViewportLeft = -panX / currentZoom;
+                const imgCoordAtViewportRight = (viewportWidth - panX) / currentZoom;
+                const imgCoordAtViewportTop = -panY / currentZoom;
+                const imgCoordAtViewportBottom = (viewportHeight - panY) / currentZoom;
+                return {
+                    visibleStartPercent: Math.max(0, Math.min(100, (imgCoordAtViewportLeft / canvasWidth) * 100)),
+                    visibleEndPercent: Math.max(0, Math.min(100, (imgCoordAtViewportRight / canvasWidth) * 100)),
+                    visibleTopPercent: Math.max(0, Math.min(100, (imgCoordAtViewportTop / canvasHeight) * 100)),
+                    visibleBottomPercent: Math.max(0, Math.min(100, (imgCoordAtViewportBottom / canvasHeight) * 100))
+                };
+            }
+
+            // --- Animation & Manual Modes ---
+            function animate() {
+                const activeComparisonSlots = activeSlotData.slice(1).filter(d => d.isLoaded && d.src && d.clipper);
+                const isAnimated = comparisonMode === 'swipe' || comparisonMode === 'fade';
+                if (!activeSlotData[0]?.isLoaded || activeComparisonSlots.length === 0 || !isAnimated) {
+                    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                    if (activeComparisonSlots.length > 0) { // Reset clipper if animation stops
+                        activeComparisonSlots.forEach(slot => {
+                            slot.clipper.style.width = '100%';
+                            slot.clipper.style.height = '100%';
+                        });
+                    }
+                    return;
+                }
+
+                const { visibleStartPercent, visibleEndPercent, visibleTopPercent, visibleBottomPercent } = getVisibleImageRangePercents();
+
+                let rangeStart, rangeEnd;
+                if (currentSwipeDirection === 'horizontal' || comparisonMode === 'fade') {
+                    rangeStart = visibleStartPercent;
+                    rangeEnd = visibleEndPercent;
+                } else { // vertical
+                    rangeStart = visibleTopPercent;
+                    rangeEnd = visibleBottomPercent;
+                }
+
+                const totalDelay = currentDelay * (activeComparisonSlots.length - 1);
+                const actualCursorRangeEnd = rangeEnd + totalDelay;
+
+                if (!animationFrameId) { // Set initial cursor position
+                    animationCursor = rangeStart;
+                    animationDirection = 1;
+                }
+
+                animationCursor += currentSpeed * animationDirection;
+                if (animationCursor >= actualCursorRangeEnd) {
+                    animationCursor = actualCursorRangeEnd; animationDirection = -1;
+                } else if (animationCursor <= rangeStart) {
+                    animationCursor = rangeStart; animationDirection = 1;
+                }
+
+                if (comparisonMode === 'swipe') {
+                    activeComparisonSlots.forEach((slot, index) => {
+                        const delayedCursor = animationCursor - (currentDelay * index);
+                        if (currentSwipeDirection === 'horizontal') {
+                            slot.clipper.style.width = `${Math.max(rangeStart, Math.min(rangeEnd, delayedCursor))}%`;
+                        } else { // vertical
+                            slot.clipper.style.height = `${Math.max(rangeStart, Math.min(rangeEnd, delayedCursor))}%`;
+                        }
+                    });
+                } else if (comparisonMode === 'fade') {
+                    activeComparisonSlots.forEach((slot, index) => {
+                        const delayedCursor = animationCursor - (currentDelay * index);
+                        const opacity = (delayedCursor - rangeStart) / (rangeEnd - rangeStart);
+                        slot.container.style.opacity = Math.max(0, Math.min(1, opacity));
+                    });
+                }
+
+                animationFrameId = requestAnimationFrame(animate);
+            }
+
+            function setupManualSlider() {
+                const comparisonSlot = activeSlotData[1];
+                if (!comparisonSlot || !comparisonSlot.isLoaded) return;
+                manualSliderHandle.classList.remove('hidden');
+
+                const isHorizontal = manualSliderDirection.value === 'horizontal';
+                manualSliderHandle.style.cursor = isHorizontal ? 'ew-resize' : 'ns-resize';
+
+                // Oblicz pozycję środka ekranu w przestrzeni obrazu
+                const viewRect = mainViewArea.getBoundingClientRect();
+                const centerXInViewport = viewRect.width / 2;
+                const centerYInViewport = viewRect.height / 2;
+
+                // Konwertuj środek viewport na współrzędne obrazu
+                const centerImageX = (centerXInViewport - panX) / currentZoom;
+                const centerImageY = (centerYInViewport - panY) / currentZoom;
+
+                // Oblicz procent względem obrazu
+                const centerPercentX = Math.max(0, Math.min(100, (centerImageX / canvasWidth) * 100));
+                const centerPercentY = Math.max(0, Math.min(100, (centerImageY / canvasHeight) * 100));
+
+                // Reset position na środek EKRANU (nie obrazu)
+                if (isHorizontal) {
+                    manualSliderHandle.style.width = '20px';
+                    manualSliderHandle.style.height = '100%';
+                    manualSliderHandle.style.left = `${centerPercentX}%`;
+                    manualSliderHandle.style.top = '0';
+                    manualSliderHandle.style.transform = 'translateX(-50%)';
+                    manualSliderHandle.style.background = 'linear-gradient(to right, transparent, rgba(138, 43, 226, 0.6) 40%, rgba(138, 43, 226, 0.9) 50%, rgba(138, 43, 226, 0.6) 60%, transparent)';
+                } else {
+                    manualSliderHandle.style.width = '100%';
+                    manualSliderHandle.style.height = '20px';
+                    manualSliderHandle.style.left = '0';
+                    manualSliderHandle.style.top = `${centerPercentY}%`;
+                    manualSliderHandle.style.transform = 'translateY(-50%)';
+                    manualSliderHandle.style.background = 'linear-gradient(to bottom, transparent, rgba(138, 43, 226, 0.6) 40%, rgba(138, 43, 226, 0.9) 50%, rgba(138, 43, 226, 0.6) 60%, transparent)';
+                }
+
+                // Reset clipping na środek ekranu
+                if (comparisonSlot.clipper) {
+                    comparisonSlot.clipper.style.width = isHorizontal ? `${centerPercentX}%` : '100%';
+                    comparisonSlot.clipper.style.height = isHorizontal ? '100%' : `${centerPercentY}%`;
+                }
+            }
+
+
+            manualSliderHandle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                isDraggingManualSlider = true;
+            });
+            manualSliderHandle.addEventListener('dragstart', (e) => e.preventDefault());
+
+
+            // --- Mouse & Wheel Events ---
+            mainViewArea.addEventListener('mousedown', (e) => {
+                if (e.target === manualSliderHandle || e.target.parentElement === manualSliderHandle) return;
+                if (e.button !== 0) return;
+
+                isPanning = true;
+                lastPanX_mouse = e.clientX; lastPanY_mouse = e.clientY;
+                mainViewArea.classList.add('grabbing');
+                e.preventDefault();
+            });
+            window.addEventListener('mousemove', (e) => {
+                if (isPanning) {
+                    panX += e.clientX - lastPanX_mouse;
+                    panY += e.clientY - lastPanY_mouse;
+                    lastPanX_mouse = e.clientX;
+                    lastPanY_mouse = e.clientY;
+                    applyTransformations();
+                } else if (isDraggingManualSlider) {
+                    const viewRect = mainViewArea.getBoundingClientRect();
+                    const isHorizontal = manualSliderDirection.value === 'horizontal';
+
+                    // Oblicz pozycję kursora względem viewport
+                    const mouseXInViewport = e.clientX - viewRect.left;
+                    const mouseYInViewport = e.clientY - viewRect.top;
+
+                    // Konwertuj pozycję viewport na współrzędne obrazu (nieprzetransformowanego)
+                    const imageXCoord = (mouseXInViewport - panX) / currentZoom;
+                    const imageYCoord = (mouseYInViewport - panY) / currentZoom;
+
+                    if (isHorizontal) {
+                        // Ogranicz do granic obrazu
+                        const clampedImageX = Math.max(0, Math.min(canvasWidth, imageXCoord));
+                        const percent = (clampedImageX / canvasWidth) * 100;
+
+                        // Ustaw pozycję slidera w przestrzeni obrazu (image-stack)
+                        manualSliderHandle.style.width = '20px';
+                        manualSliderHandle.style.height = '100%';
+                        manualSliderHandle.style.left = `${percent}%`;
+                        manualSliderHandle.style.top = '0';
+                        manualSliderHandle.style.transform = 'translateX(-50%)';
+                        manualSliderHandle.style.background = 'linear-gradient(to right, transparent, rgba(138, 43, 226, 0.6) 40%, rgba(138, 43, 226, 0.9) 50%, rgba(138, 43, 226, 0.6) 60%, transparent)';
+
+                        // Ustaw clipper względem obrazu
+                        if (activeSlotData[1]) activeSlotData[1].clipper.style.width = `${percent}%`;
+                    } else {
+                        // Ogranicz do granic obrazu
+                        const clampedImageY = Math.max(0, Math.min(canvasHeight, imageYCoord));
+                        const percent = (clampedImageY / canvasHeight) * 100;
+
+                        // Ustaw pozycję slidera w przestrzeni obrazu (image-stack)
+                        manualSliderHandle.style.width = '100%';
+                        manualSliderHandle.style.height = '20px';
+                        manualSliderHandle.style.top = `${percent}%`;
+                        manualSliderHandle.style.left = '0';
+                        manualSliderHandle.style.transform = 'translateY(-50%)';
+                        manualSliderHandle.style.background = 'linear-gradient(to bottom, transparent, rgba(138, 43, 226, 0.6) 40%, rgba(138, 43, 226, 0.9) 50%, rgba(138, 43, 226, 0.6) 60%, transparent)';
+
+                        // Ustaw clipper względem obrazu
+                        if (activeSlotData[1]) activeSlotData[1].clipper.style.height = `${percent}%`;
+                    }
+                }
+            });
+            window.addEventListener('mouseup', (e) => {
+                if (e.button !== 0) return;
+                isPanning = false;
+                isDraggingManualSlider = false;
+                mainViewArea.classList.remove('grabbing');
+            });
+            mainViewArea.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomFactor = 0.1;
+                const oldZoom = currentZoom;
+                if (!viewportWidth) return;
+
+                if (e.deltaY < 0) {
+                    currentZoom = Math.min(20, currentZoom * (1 + zoomFactor));
+                } else {
+                    currentZoom = Math.max(0.1, currentZoom / (1 + zoomFactor));
+                }
+                zoomSlider.value = getSliderFromZoom(currentZoom);
+                updateControlSpans();
+
+                const rect = mainViewArea.getBoundingClientRect();
+                const mouseXInViewport = e.clientX - rect.left;
+                const mouseYInViewport = e.clientY - rect.top;
+
+                panX = mouseXInViewport - (mouseXInViewport - panX) * (currentZoom / oldZoom);
+                if (canvasHeight * currentZoom >= viewportHeight) {
+                    panY = mouseYInViewport - (mouseYInViewport - panY) * (currentZoom / oldZoom);
+                } else {
+                    panY = (viewportHeight - canvasHeight * currentZoom) / 2;
+                }
+                applyTransformations();
+            });
+
+            window.addEventListener('resize', () => {
+                updateMainViewAreaDimensions();
+                applyTransformations();
+            });
+
             // --- Initial Setup ---
-            populateSelectOptions();
             resetApp();
         });
     </script>
