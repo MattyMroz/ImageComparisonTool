@@ -351,6 +351,12 @@
             background: radial-gradient(circle at center, #2d1b4e 0%, #1a0a2e 100%);
             width: 100%;
             height: 100%;
+            /* Optymalizacje dla płynniejszego renderowania */
+            will-change: contents;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
         }
 
         #main-view-area.grabbing {
@@ -414,6 +420,17 @@
             line-height: 0;
             transform-origin: 0 0;
             will-change: transform;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+            
+            /* Subpixel precision dla płynniejszego skalowania */
+            -webkit-transform-style: preserve-3d;
+            transform-style: preserve-3d;
+            
+            /* Anti-aliasing dla całego stacku */
+            filter: contrast(100%);
         }
 
         .img-slot-container {
@@ -423,11 +440,42 @@
             height: 100%;
             top: 0;
             left: 0;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
         }
 
         .img-slot-container img {
             position: absolute;
             display: block;
+            /* Anti-aliasing i wygładzanie dla redukcji Moire */
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: auto;
+            -ms-interpolation-mode: bicubic;
+
+            /* GPU acceleration */
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+
+            /* Subpixel rendering */
+            -webkit-font-smoothing: subpixel-antialiased;
+            -moz-osx-font-smoothing: auto;
+
+            /* Zapobieganie artefaktom podczas transformacji */
+            transform: translate3d(0, 0, 0);
+            -webkit-transform: translate3d(0, 0, 0);
+            
+            /* Dodatkowe wygładzanie - pomaga z Moire */
+            filter: contrast(100%) brightness(100%);
+            
+            /* Wymuszenie lepszej jakości skalowania */
+            object-fit: contain;
+            object-position: top left;
+            
+            /* Anty-aliasing dla transformacji */
+            -webkit-perspective: 1000;
+            perspective: 1000;
         }
 
         #manual-slider-handle {
@@ -1057,6 +1105,34 @@
 
 
                 imageStack.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
+
+                // Dynamiczne dostosowanie image-rendering w zależności od zoom
+                // Dla redukcji efektu Moire
+                activeSlotData.forEach(slot => {
+                    if (slot.image) {
+                        if (currentZoom < 0.5) {
+                            // Przy dużym zmniejszaniu - dodaj subtelny blur anty-aliasing
+                            slot.image.style.imageRendering = 'auto';
+                            slot.image.style.filter = 'blur(0.3px)';
+                        } else if (currentZoom < 1) {
+                            // Przy zmniejszaniu - smooth dla uniknięcia Moire
+                            slot.image.style.imageRendering = 'auto';
+                            slot.image.style.filter = 'none';
+                        } else if (currentZoom === 1) {
+                            // Przy 1:1 - naturalne piksele
+                            slot.image.style.imageRendering = 'auto';
+                            slot.image.style.filter = 'none';
+                        } else if (currentZoom < 2) {
+                            // Przy małym powiększaniu - smooth interpolation
+                            slot.image.style.imageRendering = 'auto';
+                            slot.image.style.filter = 'none';
+                        } else {
+                            // Przy dużym powiększaniu - crisp edges dla ostrości
+                            slot.image.style.imageRendering = 'pixelated';
+                            slot.image.style.filter = 'none';
+                        }
+                    }
+                });
 
                 if (comparisonMode === 'manual-slider') {
                     setupManualSlider();
